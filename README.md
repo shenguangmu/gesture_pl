@@ -34,14 +34,17 @@ PL 的交付物是 **比特流 + `.hwh` + 报告** —— 都是语言无关的�
 **PC 侧**的 Python（golden 参考实现、造数据、ROI 分析）**由其他人维护**，不在本目录内。
 
 > **`host/` 是例外，而且这个例外有明确判据**：
-> **只在 PYNQ 板上运行、且用于驱动/验证 PL 的代码，算 PL 侧。**
+> **只看两件事** ——
+> ① **在 PYNQ 板上运行、用于驱动/验证 PL 的**（`gesture_overlay.py` 等）
+> ② **PL 语义的参考实现**（`gesture_golden.py` —— 它与 `src/HLS/gesture_ref.cpp`
+>    三方对拍，三者必须逐位一致，**是语义权威之一**）
 >
 > 因为 `.bit` 是硬件描述，**驱动是"说怎么用它"** —— 没有驱动，比特流没法验证。
 > `src/sw/`（PS 侧 C 驱动）同理。
 >
-> 所以 `host/` 里是：`gesture_overlay.py`（PL 驱动）、`test_overlay_offline.py`、
-> `usb_camera_run.py`、`run_static_frame_on_board.py`、`hdmi_bringup.py`。
-> **PC 侧那些工具仍然不在这里。** 详见 `host/README.md`。
+> **仍然不在本仓库**（真·PC 侧，且没有被任何文档引用）：
+> `auto_roi.py` / `roi_analysis.py` / `bench_ps_baseline.py` 等。
+> 详见 `host/README.md`。
 
 ### ⚠ 2. 本目录**不含比特流**（它是构建产物）
 
@@ -70,7 +73,7 @@ PL 的交付物是 **比特流 + `.hwh` + 报告** —— 都是语言无关的�
 | **`src/RTL/`** | Verilog：DVP 采集 / SCCB 主控 / 异步 FIFO / IOBUF / 配置 ROM / **HDMI 位宽转换** + 4 个 TB |
 | **`build/`** | 一键构建脚本、BD 与约束 Tcl、**综合实现报告**、资源报告 |
 | **`data/`** | 测试向量（输入帧 + **硬件实测对过的** golden） |
-| **`host/`** | ⚠ 边界例外：**板上 PL 驱动与验证脚本**（`gesture_overlay.py` 等，见 `host/README.md`）|
+| **`host/`** | ① 板上 **PL 驱动与验证脚本** ② **预处理链的 Python 参考实现**（`gesture_golden.py`，三方对拍的语义权威）—— 见 `host/README.md` |
 | **`third_party/`** | 第三方 IP（Digilent `rgb2dvi`，HDMI 用）+ 出处与许可说明 |
 | **`sim/`** | **验证索引** —— 说明正确性怎么确认（TB 跟着源码放，见该目录 README） |
 | **`skill/`** | 可复用经验：踩坑清单 / 纠错方法论 |
@@ -105,6 +108,17 @@ bash build/tools/rebuild_all.sh              # 全清 → HLS → Vivado → 校
 ```
 
 **前置**：Vitis + Vivado **2025.2**，器件 `xc7z020clg400-1`。
+
+> ⚠ **工具链路径不写死**（2026-09-26 改）—— 脚本按下面顺序自动找：
+> ① `XILINX_VITIS` / `XILINX_VIVADO` 环境变量（官方 `settings64.sh` 会设）
+> ② 开发机的已知位置　③ PATH 里的命令
+>
+> 找不到时会**明确告诉你怎么解决**，而不是报"文件找不到"。
+> 手工指定：
+> ```bash
+> VITIS_RUN=/path/to/vitis-run VIVADO=/path/to/vivado bash build/tools/rebuild_all.sh
+> ```
+> 板子地址默认 `xilinx@192.168.2.99`，可用 `BOARD_ADDR` 覆盖。
 
 > ⚠ **必须用脚本** —— HLS 导出的 IP 版本号恒为 `1.0`，新旧实现 VLNV 相同，
 > Vivado 取了旧 IP **不报错**、会默默用错实现。脚本用"全清 + 硬性校验三条"

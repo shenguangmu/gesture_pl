@@ -40,9 +40,65 @@ set -euo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 BLD="$REPO/build"
 HLS_COMP="$REPO/gesture_comp"
-VITIS_RUN="/d/BaiduNetdiskDownload/2025.2/Vitis/bin/vitis-run.bat"
-VIVADO="/d/BaiduNetdiskDownload/2025.2/Vivado/bin/vivado.bat"
-BOARD="xilinx@192.168.2.99"
+
+# =====================================================================
+#  工具链定位（**不写死路径** —— 那会让"可复现"变成空话）
+#
+#  赛题 §3.3.4 要求「工程可由他人从零复现」。原先这里把 Vitis/Vivado
+#  的绝对路径写死到开发机的 D 盘，**换台机器直接跑不起来**，
+#  而且报错是"找不到文件"，看不出是路径问题。
+#
+#  按下面顺序找，第一个命中的就用：
+#    ① 环境变量（Xilinx 官方 settings64 会设这两个，最标准）
+#    ② 本机已知位置（开发机的盘符，**只作便捷回退**）
+#    ③ PATH 里直接能调到的命令
+#
+#  ⚠ 想手工指定就用环境变量：
+#      VITIS_RUN=/path/to/vitis-run VIVADO=/path/to/vivado bash build/tools/rebuild_all.sh
+# =====================================================================
+find_tool() {
+    # $1 = 环境变量给的路径（可为空）  $2 = 候选路径列表  $3 = 命令名
+    #
+    # ⚠ 为什么用 `-f` 而不是 `-x` 判断候选：
+    #   Windows 的启动器 `.bat` 在 Git Bash 里是 `-rw-r--r--`（**没有可执行位**），
+    #   用 `-x` 判断会**永远失败**。而 Xilinx 同时装了无扩展名的
+    #   `vitis-run`（bash 脚本，有 +x）和 `vitis-run.bat` 两个版本。
+    #   所以：候选只要有**这个文件**就接受（能不能跑由调用方决定）。
+    [ -n "$1" ] && [ -f "$1" ] && { echo "$1"; return; }
+    for c in $2; do
+        [ -f "$c" ] && { echo "$c"; return; }
+    done
+    command -v "$3" 2>/dev/null && return
+    echo ""
+}
+
+# ① 环境变量（官方 settings64.sh 设的）
+VITIS_HINT="${XILINX_VITIS:+$XILINX_VITIS/bin/vitis-run.bat}"
+VIVADO_HINT="${XILINX_VIVADO:+$XILINX_VIVADO/bin/vivado.bat}"
+
+# ② 本机已知位置（开发机；换机器时把这里改成你自己的，或用环境变量）
+LOCAL_CAND="/d/BaiduNetdiskDownload/2025.2 /c/Xilinx/2025.2 /opt/Xilinx/2025.2"
+
+VITIS_RUN=$(find_tool "$VITIS_HINT" \
+    "$(for d in $LOCAL_CAND; do echo "$d/Vitis/bin/vitis-run.bat"; done | tr '\n' ' ')" \
+    vitis-run)
+VIVADO=$(find_tool "$VIVADO_HINT" \
+    "$(for d in $LOCAL_CAND; do echo "$d/Vivado/bin/vivado.bat"; done | tr '\n' ' ')" \
+    vivado)
+
+if [ -z "$VITIS_RUN" ] || [ -z "$VIVADO" ]; then
+    echo "!!! 找不到工具链 —— 需要 Vitis + Vivado **2025.2**"
+    [ -z "$VITIS_RUN" ] && echo "    缺: vitis-run"
+    [ -z "$VIVADO" ]    && echo "    缺: vivado"
+    echo "    解决方式（任选）："
+    echo "      a) source <Xilinx>/settings64.sh   （官方方式，会设 XILINX_VITIS/VIVADO）"
+    echo "      b) 显式指定：VITIS_RUN=... VIVADO=... bash build/tools/rebuild_all.sh"
+    echo "      c) 改本脚本里的 LOCAL_CAND 为你的安装目录"
+    exit 1
+fi
+
+# ⚠ 板子地址：换网络/换板子时改它，或设 BOARD_ADDR 环境变量
+BOARD="${BOARD_ADDR:-xilinx@192.168.2.99}"
 BOARD_DIR="/home/xilinx"
 
 UPLOAD=0

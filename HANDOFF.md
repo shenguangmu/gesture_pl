@@ -92,6 +92,17 @@ bash build/tools/rebuild_all.sh --upload     # 再传板 + 核 md5
 
 **前置**：Vitis + Vivado **2025.2**，器件 `xc7z020clg400-1`。
 
+> ⚠ **工具链路径不写死**（2026-09-26 改）—— 脚本按下面顺序自动找：
+> ① `XILINX_VITIS` / `XILINX_VIVADO` 环境变量（官方 `settings64.sh` 会设）
+> ② 开发机的已知位置　③ PATH 里的命令
+>
+> 找不到时会**明确告诉你怎么解决**，而不是报"文件找不到"。
+> 手工指定：
+> ```bash
+> VITIS_RUN=/path/to/vitis-run VIVADO=/path/to/vivado bash build/tools/rebuild_all.sh
+> ```
+> 板子地址默认 `xilinx@192.168.2.99`，可用 `BOARD_ADDR` 覆盖。
+
 > ⚠ **为什么必须用脚本、不能手敲两条命令** —— 三个坑它都堵了：
 >
 > 1. HLS 导出的 IP **版本号永远叫 `1.0`** → 新旧实现 VLNV 相同
