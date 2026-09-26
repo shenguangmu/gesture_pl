@@ -1,37 +1,71 @@
-# host/ —— 板上运行的验证脚本
+# host/ —— 板上运行的 PL 驱动与验证脚本
 
-> ⚠ 这个目录**推翻了本工程原来的边界声明**（"本目录不含 Python"），
-> 理由见下。**是有意的例外，不是漏进来的。**
+> ⚠ 这个目录**推翻了本工程原来的边界声明**（"本目录不含 Python"）。
+> 理由见下。**是有意的，不是漏进来的。**
 
 ---
 
 ## 为什么这里会有 Python
 
-`HANDOFF.md` 写着「本目录不含 Python —— PL 的交付物是比特流 + `.hwh` + 报告，
-语言无关」。那条边界**对大多数情况仍然成立**：
+`HANDOFF.md` 原本写着「本目录不含 Python —— PL 的交付物是比特流 + `.hwh` +
+报告，语言无关」。那条边界**对 PC 侧的工具有效**：
 
-- PC 侧的 golden 参考实现、造数据脚本 → 仍在完整仓库的 `host/`
+- PC 侧 golden 参考实现、造数据、ROI 分析 → 仍在完整仓库的 `host/`
 - CNN / 游戏逻辑 → 队友负责，不在这里
 
-**但 HDMI 通路是个例外**，因为它有个绕不开的事实：
+**但"调 PL 硬件"的驱动是另一回事** —— 它和比特流是**同一个交付物**的两面：
+`.bit` 是硬件描述，驱动是**说怎么用它**。没有驱动，比特流没法验证。
 
-> **`v_tc` 和 `vdma` 都是"必须用软件配置"的 IP。**
-> 烧完比特流**什么都不显示** —— 寄存器复位后默认全 0。
+所以本目录的范围是：
 
-所以「HDMI 到底通没通」**无法只靠比特流证明**，必须有代码去配寄存器。
-这个脚本就是那份代码。
+> **只在 PYNQ 板上运行、且用于驱动/验证 PL 的代码。**
 
-**为什么不放完整仓库**：它要和 CNN 队友共用 —— 队友需要它来确认
-"我喂进去的数据有没有显示出来"。放在这里，拿到的就是一份自包含的
-`gesture_pl`，不用再去完整仓库找。
+（PS 侧的 C 驱动 `src/sw/` 同理，也在本仓库。）
 
 ---
 
-## 文件
+## 目录内容
 
-| 文件 | 作用 |
+| 文件 | 作用 | 能在 PC 上跑吗 |
+|---|---|---|
+| `gesture_overlay.py` | **PL 驱动本体** —— `GesturePipeline` 类，封装预处理链 + 两个 DMA | ⚠ 不能（要真的 overlay），但可离线自检 |
+| `test_overlay_offline.py` | 驱动**离线自检**（70 项），不进 pynq | ✅ 能（已挂 CI）|
+| `usb_camera_run.py` | USB(UVC) 摄像头 → PL 预处理链 | ⚠ 探测模式能，喂数据不能 |
+| `run_static_frame_on_board.py` | 静态图喂 DDR + 与 golden 对拍（最小示例）| ⚠ 不能 |
+| `hdmi_bringup.py` | **HDMI 分步 bring-up**：配 v_tc → 配 vdma → 写彩条 | ⚠ 不能 |
+
+**不在本目录**（属 PC 侧，仍在完整仓库）：`gesture_golden.py`（golden 参考实现）、
+`auto_roi.py`、`capture_frame.py`、`bench_ps_baseline.py` 等。
+
+---
+
+## ⚠ 与完整仓库的重复问题（**必须知道**）
+
+本目录的 `gesture_overlay.py` / `usb_camera_run.py` / `test_overlay_offline.py` /
+`run_static_frame_on_board.py` **是从完整仓库 `complete_project_source/host/`
+原样复制来的**（搬运时逐字节一致，md5 已核）。
+
+**完整仓库里那 5 个消费者脚本**（`bringup_check.py` / `push.py` / `run.py`
+/ `run_static_frame_on_board.py` / `test_overlay_offline.py`）**仍然 import 它**。
+
+**∴ 现在有两份 `gesture_overlay.py`，改了会分叉。**
+
+| 改了哪里 | 要做什么 |
 |---|---|
-| `hdmi_bringup.py` | **HDMI 分步 bring-up**：配 v_tc 时序 → 配 vdma → 写彩条 |
+| 在**本仓库**改了驱动 | **必须**同步回完整仓库（否则那边的脚本会用到旧驱动）|
+| 在完整仓库改了驱动 | **必须**同步过来 |
+
+⚠ 在解决之前，**改驱动后请比对两处 md5**：
+
+```bash
+md5sum host/gesture_overlay.py \
+       /e/complete_project_source/host/gesture_overlay.py
+```
+
+> **根治方向**（尚未做，需要更大的决定）：让完整仓库的那 5 个消费者脚本
+> 直接 import 本仓库的驱动（去掉副本），或者干脆把驱动职责整个收敛到一处。
+> 现在这样做是因为**当时的任务只要求搬 `usb_camera_run.py`**，
+> 而它依赖驱动 —— 所以驱动是跟着进来的，不是重新决定的。
 
 ---
 
@@ -51,77 +85,100 @@ sudo -E /usr/local/share/pynq-venv/bin/python3 hdmi_bringup.py --stage 2
 ⚠ **必须 `sudo -E` + 写全 pynq-venv 的 python 路径** ——
 `sudo` 会重置 PATH。（Jupyter 里不用，内核本来就是 root。）
 
-### 分两个阶段，别一把梭
+### ⚠⚠ 烧完比特流显示器什么都不会有
+
+`v_tc` / `vdma` 在 BD 里开了 AXI-Lite，按 AMD PG016 **必须用软件配置**
+（寄存器复位后默认全 0）。**这不是坏，是正常的。**
 
 | 阶段 | 做什么 | 期望看到 |
 |---|---|---|
 | **1** | 配 v_tc 720p60 + 使能发生器 | 显示器**识别到 1280×720@60**，但**画面是黑的** |
-| **2** | 配 vdma + 写彩条 + 启动 | 屏幕上出现**标准彩条** |
+| **2** | 配 vdma + 写彩条 + 启动 | 出现**标准彩条** |
 
-**阶段 1 是最大的坎** —— 它过了，说明 TMDS 编码 / 像素时钟 / 引脚**全对**。
-阶段 2 只是喂数据。
+**阶段 1 是最大的坎** —— 过了说明 TMDS 编码 / 像素时钟 / 引脚**全对**。
 
----
-
-## ⚠⚠ 彩条是位序的"试纸"
+### ⚠⚠ 彩条是位序的"试纸"
 
 `src/RTL/axis_rgb565_888.v` 输出的是 **RBG 序**（不是常识的 R-G-B），
-因为 Digilent rgb2dvi 的 `vid_pData` 就是 RBG
-（源码 `rgb2dvi.vhd:181` 原文 *"for some reason vid_data is packed in RBG order"*）。
+因为 Digilent rgb2dvi 的 `vid_pData` 就是 RBG。
 
-**若位序搞错，绿蓝会互换**，彩条变成（这一列已用代码验证过）：
+**位序若写错，绿蓝会互换**，彩条变成（已用代码验证）：
 
 | 正确 | 位序错 |
 |---|---|
-| 白 | 白 |
 | **黄** | **品红** ← 一眼看出 |
-| 青 | 青 |
 | **绿** | **蓝** |
 | **品红** | **黄** |
-| 红 | 红 |
 | **蓝** | **绿** |
-| 黑 | 黑 |
 
-**所以只要看"黄色条是不是变成了品红"，就知道位序对不对。**
+（白/青/红/黑不变）
 
-⚠ 若是**红蓝**互换（不是绿蓝）→ 那是 DDR 里 RGB565 的字节序反了，
-把 `axis_rgb565_888.v` 的参数 `IN_BYTE_SWAP` 置 1 后重建。
+**只看"黄色条是不是变成品红"就够了。**
+⚠ 若是**红蓝**互换 → DDR 里 RGB565 字节序反了，把 `IN_BYTE_SWAP` 置 1。
+
+---
+
+## `usb_camera_run.py` 用法
+
+**USB 摄像头是绕开 DVP 硬件的一条输入路径**（DVP 仍卡在 SCCB 无 ACK）：
+
+```
+DVP 方案: 摄像头 --DVP--> PL(dvp_capture) --> 预处理链 --> DDR
+USB 方案: 摄像头 --USB--> PS CPU --> DDR --> dma_in --> 预处理链 --> DDR
+                                    ↑ 从"写进 DDR"这步起与方案 A 完全相同
+⚠ PL 侧一行都不用改。
+```
+
+```bash
+# ⚠ 先只探测摄像头，不碰 PL
+sudo -E ... usb_camera_run.py --probe
+
+# 采集一帧 → 喂进 PL 链 → 存输出
+sudo -E ... usb_camera_run.py
+
+# 连续 5 帧（看时序稳不稳）
+sudo -E ... usb_camera_run.py --frames 5
+
+# 顺便存下摄像头原始画面，肉眼确认取景
+sudo -E ... usb_camera_run.py --save-preview p.png
+```
+
+> ⚠ **`--probe` 模式不需要 overlay**（`gesture_overlay` 是函数内 import 的），
+> 所以在驱动还没就位时可以单独跑它排查摄像头。
+
+⚠ **`--probe` 从未在任何机器上跑过**（截至 2026-09-26，摄像头尚未到手）。
+第一次跑请从它开始。
 
 ---
 
 ## 寄存器来源（不猜）
 
-脚本里所有寄存器偏移与位定义都有出处，**不是我推的**：
+`hdmi_bringup.py` 里所有寄存器偏移与位定义都有出处：
 
 | IP | 来源 |
 |---|---|
 | `v_tc` | Xilinx 官方驱动 `xvtc_hw.h` / `xvtc.c`（embeddedsw 仓库）|
 | `vdma` | Xilinx 官方驱动 `xaxivdma_hw.h` / `xaxivdma.c` |
 
-⚠ 两处**容易用错**的地方，脚本里都标了：
+⚠ 两处**极容易用错**，脚本里都标了：
 
-1. **`XVtc_SetGenerator` 有两个分支**（`OriginMode` 0/1），
-   **算法不同**。驱动实际走 **mode 1**。用错分支寄存器值全错。
-2. **VDMA 寄存器直通模式下，MM2S 的两块不连续**：
-   控制块在 `base+0x00`、参数块在 `base+0x50`。
-   写错地方不报错，只是静默不工作。
+1. **`XVtc_SetGenerator` 有 `OriginMode` 0/1 两个分支，算法不同**
+   （mode 0 用 `HTotal+1`；mode 1 直接用各 Start 值）。
+   驱动实际走 **mode 1**。用错分支寄存器值全错。
+2. **VDMA 寄存器直通模式下 MM2S 的两块不连续**：
+   控制块 `base+0x00`、参数块 `base+0x50`。写错地方**不报错**，只是静默不工作。
 
-另外**没有**用头文件里的 `XVTC_CTL_ALLSS_MASK` ——
-实测那个掩码并不包含全部源选择位（缺 HBPSS，却含 INTERLACE 位）。
-脚本里改为**逐位显式列出**。
+另外**没有**用头文件的 `XVTC_CTL_ALLSS_MASK` —— 实测它不含全部源选择位
+（缺 `HBPSS`、却含 `INTERLACE` 位），改为逐位显式列出。
 
 ---
 
-## ⚠ 本脚本未经上板验证
+## 验证状态（如实）
 
-2026-09-26 写完即交付，**还没在板子上跑过**。
-
-已验证的部分：
-- 语法通过
-- 720p60 寄存器推导（H total=1650 / V total=750 / 60.00 Hz）✓
-- 彩条生成（8 条 RGB565 值正确）✓
-- 位序预测表（已用代码验证）✓
-
-**没验证的**：真机上 MMIO 地址、VDMA 启动时序、显示器实际表现。
-
-第一次跑请**分阶段**执行，别一把梭 —— 出问题才好定位。
+| 脚本 | 状态 |
+|---|---|
+| `gesture_overlay.py` | ✅ 板上实测过（2026-09-21，11/11；09-23 与 golden 逐字节一致）|
+| `test_overlay_offline.py` | ✅ 70 项全过（本机 + CI）|
+| `run_static_frame_on_board.py` | ✅ 板上实测过（09-23 对拍）|
+| `hdmi_bringup.py` | ⚠ **从未上板** —— 只验过语法、720p 寄存器推导、彩条生成 |
+| `usb_camera_run.py` | ⚠ **从未跑过** —— 连 `--probe` 都没跑过（摄像头未到手）|

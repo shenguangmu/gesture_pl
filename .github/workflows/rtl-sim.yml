@@ -116,18 +116,42 @@ jobs:
           fi
 
   # =====================================================================
-  #  ⚠ 原「第三个 job：PYNQ 驱动离线自检」与「第四个 job：操作手册渲染校验」
-  #     在 2026-09-26 目录重排时**有意移除**，不是漏配。
+  #  第三个 job：PYNQ 驱动离线自检（2026-09-26 恢复）
   #
-  #  它们分别依赖：
-  #     python host/test_overlay_offline.py     ← host/（PC + 板上 Python）
-  #     python scripts/check_deadcode.py        ← scripts/
-  #     python scripts/build_manual.py          ← scripts/
-  #  这三个目录属于 **Python 侧**，按本工程的定位（PL 侧，不含 Python，
-  #  见 HANDOFF.md「两处边界」）**不在此仓库内**。
-  #  留着会让 CI 稳定变红，而"稳定红"等于没有 CI —— 所以移除。
+  #  为什么当初删了、现在又加回来：
+  #    删除时的理由是「host/ 属 Python 侧，不在本仓库」。
+  #    ⚠ **那个判定后来不成立了** —— `gesture_overlay.py` 是**板上 PL 驱动**
+  #    （只 import pynq，零 PC 侧依赖），后来判定「调 PL 驱动的算 PL 侧」，
+  #    于是 host/ 带着这个驱动搬进了本仓库，job 也就该跟着回来。
   #
-  #  ⚠ 但它们覆盖的东西是真的有用（2026-09-18 在那条链上发现过一个
-  #    静默 bug：有符号阈值偏置写成 8 位补码，IP 读回来从 −8 变 +248，
-  #     输出全黑且不报错）。**要跑这两个 job，请回完整仓库。**
+  #  ⚠ 本测试**不 import pynq** —— `gesture_overlay.py` 把 pynq 的导入
+  #    放在 try/except 里，所以能在没有 PYNQ 环境的 runner 上静态检查。
+  #    （本机实测：70 项检查全过，退出码 0。）
+  #
+  #  ⚠ 原 job 里还混着两项，**没有搬过来**（它们依赖的是 PC 侧的东西）：
+  #      python scripts/check_deadcode.py     ← scripts/（PC 侧）
+  #      python host/test_pynq_serial.py      ← 串口脚本（PC 侧）
+  #    要跑那两个请回完整仓库。
   # =====================================================================
+  overlay-offline:
+    name: PYNQ 驱动离线自检（Python）
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: 版本确认（写进日志，便于复现）
+        run: python --version
+
+      - name: 跑离线自检并校验通过标记
+        run: |
+          set -o pipefail
+          python host/test_overlay_offline.py 2>&1 | tee /tmp/overlay.log
+          if ! grep -q 'OVERLAY OFFLINE TESTS PASSED' /tmp/overlay.log; then
+            echo "::error::日志里没有 '*** OVERLAY OFFLINE TESTS PASSED ***' —— 自检未真正通过"
+            exit 1
+          fi

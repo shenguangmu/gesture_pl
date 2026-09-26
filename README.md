@@ -28,18 +28,20 @@ RGB565 640×480 ─► crop_scale ─► 96×96 ─┬─► 高斯 ─► Sobel
 
 ## 二、本目录范围（三处边界，别多找）
 
-### ⚠ 1. 本目录**基本不含 Python** —— 有一个例外
+### ⚠ 1. 本目录**不包含 PC 侧工具** —— 但有板上驱动
 
 PL 的交付物是 **比特流 + `.hwh` + 报告** —— 都是语言无关的。
-主机侧与 PS 侧的 Python 代码**由其他人维护**，不在本目录内。
+**PC 侧**的 Python（golden 参考实现、造数据、ROI 分析）**由其他人维护**，不在本目录内。
 
-所以本目录里**没有**：PC 侧 golden 参考实现、造数据脚本、CNN / 游戏逻辑。
-
-> **例外（2026-09-26 起）**：`host/` 目录里有**一个** Python 脚本
-> `hdmi_bringup.py`。理由：**HDMI 通没通无法只靠比特流证明** ——
-> `v_tc` / `vdma` 在 BD 里开了 AXI-Lite，按 AMD PG016
-> **必须用软件配置**，烧完比特流显示器什么都不会有。
-> 而且这脚本要和 CNN 队友共用。详见 `host/README.md`。
+> **`host/` 是例外，而且这个例外有明确判据**：
+> **只在 PYNQ 板上运行、且用于驱动/验证 PL 的代码，算 PL 侧。**
+>
+> 因为 `.bit` 是硬件描述，**驱动是"说怎么用它"** —— 没有驱动，比特流没法验证。
+> `src/sw/`（PS 侧 C 驱动）同理。
+>
+> 所以 `host/` 里是：`gesture_overlay.py`（PL 驱动）、`test_overlay_offline.py`、
+> `usb_camera_run.py`、`run_static_frame_on_board.py`、`hdmi_bringup.py`。
+> **PC 侧那些工具仍然不在这里。** 详见 `host/README.md`。
 
 ### ⚠ 2. 本目录**不含比特流**（它是构建产物）
 
@@ -68,7 +70,7 @@ PL 的交付物是 **比特流 + `.hwh` + 报告** —— 都是语言无关的�
 | **`src/RTL/`** | Verilog：DVP 采集 / SCCB 主控 / 异步 FIFO / IOBUF / 配置 ROM / **HDMI 位宽转换** + 4 个 TB |
 | **`build/`** | 一键构建脚本、BD 与约束 Tcl、**综合实现报告**、资源报告 |
 | **`data/`** | 测试向量（输入帧 + **硬件实测对过的** golden） |
-| **`host/`** | ⚠ 边界例外：**一个** Python —— `hdmi_bringup.py`（HDMI 板上配置，见 `host/README.md`）|
+| **`host/`** | ⚠ 边界例外：**板上 PL 驱动与验证脚本**（`gesture_overlay.py` 等，见 `host/README.md`）|
 | **`third_party/`** | 第三方 IP（Digilent `rgb2dvi`，HDMI 用）+ 出处与许可说明 |
 | **`sim/`** | **验证索引** —— 说明正确性怎么确认（TB 跟着源码放，见该目录 README） |
 | **`skill/`** | 可复用经验：踩坑清单 / 纠错方法论 |
