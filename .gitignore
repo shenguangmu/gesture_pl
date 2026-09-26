@@ -69,6 +69,22 @@ build/vivado/gesture_system/gesture_system.xsa
 build/vivado/gesture_system/gesture_system.runs/
 
 # ==============================================================
+#  Vivado GUI 打开工程时生成的副产品
+# ==============================================================
+#   `.Xil/`（GUI 的临时状态）、`NA/`（PS7 摘要报告 html）、
+#   `vivado.jou` / `vivado.log` / `dfx_runtime.txt`。
+#   ⚠ 用 GUI 打开一次工程就会冒出来，**纯副产品**，删了无影响。
+#
+#   ⚠ 注意：GUI 打开还会**重排 `.xpr` 里的条目**（把重复的 wrapper
+#     条目合并）。那个文件是**被跟踪的**，会产生 diff —— 属于正常现象，
+#     不要手工去"修"它；下次跑 rebuild_all.sh 会整个重建覆盖。
+build/vivado/**/.Xil/
+build/vivado/**/NA/
+build/vivado/**/*.jou
+build/vivado/**/*.log
+build/vivado/**/dfx_runtime.txt
+
+# ==============================================================
 #  utilization.rpt —— **有意入库**（2026-09-17 更正）
 # ==============================================================
 #   赛题 §3.3.5.1 明确要求提交「综合与实现报告，含资源占用、
