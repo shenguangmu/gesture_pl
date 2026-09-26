@@ -147,8 +147,14 @@ def main():
     print()
 
     # ---- 摄像头 ----
+    #
+    # ⚠ `open_camera()` 返回的是 **4 元组** `(cap, aw, ah, got_fourcc)`，
+    #   不是单个 cap 对象 —— 必须解包。
+    #   （写这个脚本时没核对返回值直接当对象用，板上跑出
+    #     `AttributeError: 'tuple' object has no attribute 'read'`。
+    #     教训：调用别人的函数前先看它 return 什么。）
     print('[1] 打开摄像头')
-    cap = U.open_camera(args.camera)
+    cap, aw, ah, got = U.open_camera(args.camera)
     if cap is None:
         print('!!! 摄像头打不开 —— 先跑 usb_camera_run.py --probe 排查')
         return 1
@@ -158,7 +164,9 @@ def main():
     from gesture_overlay import GesturePipeline
     g = GesturePipeline()
     g.setup_dma()
-    g.config(roi_x=0, roi_y=0, roi_w=640, roi_h=480)   # ⚠ 全幅，见下
+    # ⚠ 用全幅 ROI：方向采集时手的位置由人控制，固定 ROI 容易把手切出框。
+    #   全幅 + 手占画面大半 = 最稳。若手偏小，改这里的 roi 或让人靠近。
+    g.config(roi_x=0, roi_y=0, roi_w=640, roi_h=480)
     print('    已配置 ROI=(0,0) 640x480（全幅）')
 
     print('\n[3] 开始采集')
@@ -213,7 +221,12 @@ def main():
             print('    存好 feat_%02d.bin + cam_%02d.png   非零 %d/9216%s'
                   % (i, i, nz, flag))
     finally:
-        cap.release()
+        # ⚠ cap 一定是有效的（上面解包后有校验），但 release 仍放进 finally,
+        #   保证中途 Ctrl-C / 异常也能释放摄像头
+        try:
+            cap.release()
+        except Exception:
+            pass
 
     if len(feats) < 2:
         print('\n!!! 采到的样本不足 2 个，无法比较')
