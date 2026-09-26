@@ -307,7 +307,7 @@ ATK-OV5640 写的）。用户一句话就澄清了 —— 而模型当时**没�
 |---|---|---|
 | 19 条踩坑（含触发条件与排查步骤） | `../vivado/README.md` + [`../skill/pitfalls/`](../skill/pitfalls/README.md) | 与题目无关 |
 | 纠错方法论（4 个模式 + 自检清单） | [`../skill/self-correction/`](../skill/self-correction/README.md) | 与题目无关 |
-| 4 个 PYNQ 校验工具 | [`../skill/pynq/`](../skill/pynq/README.md) | **换题目、换板卡仍可用（赛题加分项）** |
+| 4 个 PYNQ 校验工具 | `skill/pynq/`（⚠ **不在本仓库**，属技能包，见完整仓库）| **换题目、换板卡仍可用（赛题加分项）** |
 
 **提炼标准**：**"这个内容对做别的题目的队伍有用吗？"**
 有用 → 进 `skill/`；只是本项目的记录 → 留在 `docs/`。
