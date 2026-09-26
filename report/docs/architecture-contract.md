@@ -117,13 +117,13 @@ CNN 侧在 PC 上调模型时，**最需要的是数据格式和一个可对照�
 
 | 文件 | 内容 |
 |---|---|
-| `samples/frame_640x480_rgb565.bin` | 输入：640×480 RGB565，`uint16` 小端行优先，614400 字节 |
-| `samples/golden_96x96_gray.bin` | **期望输出**：96×96 uint8 灰度，9216 字节（与板上实测逐字节一致） |
+| `data/frame_640x480_rgb565.bin` | 输入：640×480 RGB565，`uint16` 小端行优先，614400 字节 |
+| `data/golden_96x96_gray.bin` | **期望输出**：96×96 uint8 灰度，9216 字节（与板上实测逐字节一致） |
 
 ```python
 import numpy as np
-rgb  = np.fromfile('samples/frame_640x480_rgb565.bin', dtype='<u2').reshape(480, 640)
-gray = np.fromfile('samples/golden_96x96_gray.bin',     dtype=np.uint8).reshape(96, 96)
+rgb  = np.fromfile('data/frame_640x480_rgb565.bin', dtype='<u2').reshape(480, 640)
+gray = np.fromfile('data/golden_96x96_gray.bin',     dtype=np.uint8).reshape(96, 96)
 ```
 
 > **样例参数**：ROI=(160,80) 320×320，`thresh_mode=1`、`thresh_offset=-8`、

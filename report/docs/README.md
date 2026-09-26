@@ -117,7 +117,7 @@ README.md                          ← 总入口，含进度表与一键回归�
 ├── docs/board-test-log-2026-09-23.md ← 已上板：实测记录（**先读这个**）
 ├── docs/cnn-handoff-12directions.md  ← ⭐ 给 PS/CNN 侧的交接（当前版）
 ├── docs/pl-to-ps-handoff.md       ← 同上（较旧，联调部分仍有效）
-├── samples/README.md              ← 给 PS/CNN 侧的样例数据（PC 上即可用）
+├── data/README.md              ← 给 PS/CNN 侧的样例数据（PC 上即可用）
 │
 ├── src/HLS/README.md              ← HLS 处理链（语义契约 + cosim 排查）
 ├── rtl/README.md                  ← 手写 Verilog（含验证盲区说明）

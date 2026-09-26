@@ -1,0 +1,59 @@
+手势识别系统 · PL 侧（gesture_pl）
+Copyright 2026 全国大学生嵌入式芯片与系统设计竞赛参赛作品
+
+本产品包含由第三方开发的软件，其版权归相应所有者所有：
+
+=======================================================================
+Digilent rgb2dvi —— RGB 到 DVI/HDMI 的 TMDS 编码器
+=======================================================================
+
+  (c) 2014 Copyright Digilent Incorporated
+  All Rights Reserved
+
+  This program is free software; distributed under the terms of
+  BSD 3-clause license ("Revised BSD License", "New BSD License",
+  or "Modified BSD License")
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions
+  are met:
+
+  1. Redistributions of source code must retain the above copyright
+     notice, this list of conditions and the following disclaimer.
+  2. Redistributions in binary form must reproduce the above copyright
+     notice, this list of conditions and the following disclaimer in
+     the documentation and/or other materials provided with the
+     distribution.
+  3. Neither the name(s) of the above-listed copyright holder(s) nor
+     the names of its contributors may be used to endorse or promote
+     products derived from this software without specific prior
+     written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  POSSIBILITY OF SUCH DAMAGE.
+
+  上游：https://github.com/Digilent/vivado-library
+  本仓库位置：third_party/digilent/rgb2dvi_v1_2/  （版本 1.2）
+  依赖接口：third_party/digilent/if/tmds_v1_0/
+
+  说明：本仓库**原样保留了**每个源文件顶部的版权头（条件 1），
+        本条通知即条件 2 要求的声明。详见 third_party/README.md。
+
+=======================================================================
+
+本仓库自身的代码按 Apache License 2.0 授权（见 LICENSE）。
+
+⚠ 本仓库**未引用**任何其他第三方的**代码**。设计报告中提及的
+  `xupsh/Pynq-CV-OV5640` 与 `ambitously/zynq7020-image-enhancement`
+  仅作**思路与接线参考**，未复制其代码（后者更无 LICENSE，见
+  report/design.md §1.4 的说明）。

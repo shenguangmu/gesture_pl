@@ -38,8 +38,11 @@ GUI 里最容易出问题是**漏连**（时钟、复位、AXI 通路）。
 所以**建议先跑一次命令行版**，拿到一个已知正确的参照：
 
 ```bash
-vivado -mode batch -source vivado/test_bd_video.tcl
+cd build/vivado && vivado -mode batch -source test_bd_video.tcl
 ```
+
+> ⚠ 目录重排（2026-09-26）后脚本在 `build/vivado/` ——
+> 旧写法 `-source vivado/xxx.tcl` 在仓库根执行会报找不到文件。
 
 看到 `测试完成 — BD 构建成功` 说明参照可用。GUI 搭完后
 可以和它逐项对照（见 §3 检查清单）。
@@ -727,7 +730,7 @@ TMDS 编码器和像素时钟输出，端口数量对不上，补齐后才能启
 ### 6.1 生成比特流
 
 ```bash
-vivado -mode batch -source vivado/create_project.tcl
+cd build/vivado && vivado -mode batch -source create_project.tcl
 ```
 
 它会**从头建工程** → 建 BD → 综合 → 实现 → 生成比特流 → 导出 XSA。
@@ -735,13 +738,13 @@ vivado -mode batch -source vivado/create_project.tcl
 
 产出：
 ```
-vivado/gesture_system/gesture_system.xsa      ← 含比特流
-vivado/gesture_system/utilization.rpt         ← 资源报告
+build/vivado/gesture_system/gesture_system.xsa      ← 含比特流
+build/vivado/gesture_system/utilization.rpt         ← 资源报告
 ```
 
 > ⚠ 只想先看 BD 是否合法（不跑实现，约 1 分钟）：
 > ```bash
-> vivado -mode batch -source vivado/create_project.tcl -tclargs --synth 0
+> cd build/vivado && vivado -mode batch -source create_project.tcl -tclargs --synth 0
 > ```
 
 ### 6.2 加载到板子

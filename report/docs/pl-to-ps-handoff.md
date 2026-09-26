@@ -53,17 +53,17 @@
 
 ### 2.2 直接可用的样例
 
-仓库 `samples/` 下：
+仓库 `data/` 下：
 
 ```bash
-samples/frame_640x480_rgb565.bin   # 输入样本，614400 B
-samples/golden_96x96_gray.bin      # 期望输出，9216 B
+data/frame_640x480_rgb565.bin   # 输入样本，614400 B
+data/golden_96x96_gray.bin      # 期望输出，9216 B
 ```
 
 ```python
 import numpy as np
-rgb  = np.fromfile('samples/frame_640x480_rgb565.bin', dtype='<u2').reshape(480, 640)
-gray = np.fromfile('samples/golden_96x96_gray.bin',     dtype=np.uint8).reshape(96, 96)
+rgb  = np.fromfile('data/frame_640x480_rgb565.bin', dtype='<u2').reshape(480, 640)
+gray = np.fromfile('data/golden_96x96_gray.bin',     dtype=np.uint8).reshape(96, 96)
 ```
 
 > ⭐ **这份 golden 是硬件实测对过的，不是推算的**：
@@ -123,7 +123,7 @@ f = to_feature(rgb)          # shape (96,96) uint8
 
 ```bash
 # 灰度版（--no-thresh 关掉二值化）
-python host/gesture_golden.py --input samples/frame_640x480_rgb565.bin \
+python host/gesture_golden.py --input data/frame_640x480_rgb565.bin \
        --roi 160 80 320 320 --no-thresh --out golden_gray.bin
 ```
 
@@ -215,7 +215,7 @@ DMA 绕过 CPU cache。写完输入必须 **flush**，读完输出必须 **inval
 | 想看什么 | 去哪 |
 |---|---|
 | 接口契约（**权威定义**） | `docs/architecture-contract.md` §3 |
-| 样例数据说明 | `samples/README.md` |
+| 样例数据说明 | `data/README.md` |
 | 板上实测记录（含两个 bug 的根因） | `docs/board-test-log-2026-09-23.md` |
 | 综合与实现报告（赛题要求） | `vivado/build-report.md` |
 | 上板操作指南 | `docs/board-bringup-guide.md` |
@@ -225,7 +225,7 @@ DMA 绕过 CPU cache。写完输入必须 **flush**，读完输出必须 **inval
 
 ## 附：有问题先查这几条
 
-1. **造出的特征图和 samples/ 里的对不上** → 检查 ROI 是否一致（生成输入用的图 / 你的 `--roi`）；ROI 三处必须一致
+1. **造出的特征图和 data/ 里的对不上** → 检查 ROI 是否一致（生成输入用的图 / 你的 `--roi`）；ROI 三处必须一致
 2. **输出全黑或全白** → 多半是 `thresh_mode` 或 `thresh_offset` 不对；注意 `thresh_offset` 是**有符号**的
 3. **PC 上跑 golden 报错** → 需要 `numpy`；如需读图片还要 `opencv-python` 或 `Pillow`
-4. **怀疑数据分布不对** → 拿 `samples/golden_96x96_gray.bin` 做基准，它的 md5 与板上输出相同
+4. **怀疑数据分布不对** → 拿 `data/golden_96x96_gray.bin` 做基准，它的 md5 与板上输出相同

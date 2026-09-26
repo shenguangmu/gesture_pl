@@ -21,27 +21,49 @@
 
 ## 构建与验证
 
+### ⭐ 推荐：一键脚本（在**仓库根**执行）
+
+```bash
+bash build/tools/rebuild_all.sh              # 全清缓存 → HLS → Vivado → 校验产物
+bash build/tools/rebuild_all.sh --upload     # 再传板 + 核 md5
+```
+
+它堵了四个坑（IP 版本号恒为 `1.0`、三处 IP 缓存、被跟踪的 `.srcs`、
+**时序硬校验**）。详见根 `README.md`。
+
+### 手动（等价）
+
+> ⚠ **下面这些命令要在 `build/vivado/` 目录下执行** ——
+> 目录重排（2026-09-26）后脚本从 `vivado/` 移到了 `build/vivado/`，
+> 旧文档里的 `-source vivado/create_project.tcl` **在仓库根跑会失败**。
+
 从零建工程 → 综合 → 实现 → 比特流 → XSA（**约 20–40 分钟**）：
 
 ```bash
-vivado -mode batch -source vivado/create_project.tcl
+cd build/vivado
+vivado -mode batch -source create_project.tcl
 ```
 
 只想快速检查 BD 是否合法（约 1 分钟，不综合）：
 
 ```bash
-vivado -mode batch -source vivado/create_project.tcl -tclargs --synth 0
+cd build/vivado
+vivado -mode batch -source create_project.tcl -tclargs --synth 0
 ```
 
 分步验证：
 
 ```bash
-vivado -mode batch -source vivado/test_bd_video.tcl      # BD + validate
-vivado -mode batch -source vivado/test_video_io_xdc.tcl  # 约束 + 综合
+cd build/vivado
+vivado -mode batch -source test_bd_video.tcl      # BD + validate
+vivado -mode batch -source test_video_io_xdc.tcl  # 约束 + 综合
 ```
 
-> ⚠ **不要在 `vivado` 前面加 `bash`** —— 本目录里就有个 `vivado/` 目录，
-> `bash vivado` 会让 bash 去执行那个目录，报 `Is a directory`。
+> ⚠ **不要再写 `-source vivado/xxx.tcl`** —— 那是重排前的路径，
+> 在仓库根执行会报"找不到文件"。
+>
+> ⚠ **也不要在 `vivado` 前面加 `bash`** —— 它是可执行程序，
+> `bash vivado` 会让 bash 去当脚本解释它，报奇怪的错。
 
 所有脚本失败时会立刻 `exit 1` 并打印错误，适合接进 CI。
 

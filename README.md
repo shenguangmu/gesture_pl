@@ -152,4 +152,14 @@ bash src/RTL/run_iverilog.sh          # 秒级，4 个 TB
 
 ## 七、许可
 
-Apache-2.0，见 `LICENSE`。
+本工程自身：**Apache-2.0**，见 `LICENSE`。
+
+⚠ **含第三方代码**：`third_party/digilent/`（rgb2dvi，HDMI 用的 TMDS 编码器）
+是 **BSD-3-Clause**，版权归 Digilent Incorporated。
+
+- 完整的第三方版权声明与许可条款 → **`NOTICE`**
+- 出处、版本、再分发条件逐条对照 → `third_party/README.md`
+
+> ⚠ **不要为了"统一许可"而删掉第三方源文件顶部的版权头** ——
+> BSD-3 的第一条再分发条件就是"必须保留版权声明"。
+> Apache-2.0 与 BSD-3 都是宽松许可，**并存合法**。
