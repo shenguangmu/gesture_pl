@@ -1,0 +1,494 @@
+# =====================================================================
+#  video_io.xdc —— 视频接口约束（bd_video 用）
+#
+#  与 sobel_io.xdc 的关系：那个是原 Sobel 工程的约束，保持不动。
+#  本文件是新的视频流水线的补充约束。
+#
+#  ─────────────────────────────────────────────────────────────────
+#  ⚠⚠ 这个文件里**不能写 Tcl 的 if 语句**
+#  ─────────────────────────────────────────────────────────────────
+#  XDC 是 Tcl 的**受限子集** —— 只支持约束命令，不支持控制流。
+#  写了 if 会被解析器直接拒绝：
+#
+#      CRITICAL WARNING: [Designutils 20-1307]
+#        Command 'if' is not supported in the xdc constraint file.
+#
+#  而且它是 **CRITICAL WARNING 不是 ERROR**，流程照样往下跑，
+#  约束却整段静默失效 —— 最难查的一类问题。
+#  （早期版本用 if 做"端口不存在就跳过"的保护，结果所有约束都没生效，
+#    综合日志里只有一行 CRITICAL WARNING，不看日志根本发现不了。）
+#
+#  XDC 支持的条件写法是 **`current_instance` + `get_* -quiet`**：
+#     - `get_* -quiet` 找不到对象时返回空列表而**不报错**
+#     - 把约束命令直接串在空列表上，Vivado 会安全地跳过
+#  所以本文件统一用这种写法，不用 if。
+#
+#  ⚠ 另一个坑：XDC 的执行**早于** `link_design`。
+#    此时端口/单元还没建立，`get_ports` 返回空，约束会被跳过。
+#    所以引脚类约束（set_property PACKAGE_PIN）必须放在
+#    `## 综合后生效` 标记之后，或者靠 Vivado 在实现阶段重新读。
+#    详见本文件末尾的说明。
+# =====================================================================
+
+
+# =====================================================================
+#  第一层：PCLK 时钟（已启用）
+# =====================================================================
+
+# ---------------------------------------------------------------------
+#  摄像头 PCLK
+#
+#  OV5640 在 VGA(640x480) RGB565@30 下的 PCLK 标称 24 MHz，
+#  周期 = 1000 / 24 = 41.667 ns。
+#
+#  ⚠ 这个频率必须与 BD 里 cam_pclk 端口的 CONFIG.FREQ_HZ 一致。
+#    两处不一致时 Vivado 只给 WARNING，但时序分析结果就是错的。
+#    BD 侧已设 24000000 Hz，见 vivado/bd_video.tcl §10。
+#
+#  ⚠ XDC 执行早于 link_design，此时 get_ports 可能返回空。
+#    与 set_clock_groups 同理，这类"依赖设计对象"的命令在综合
+#    阶段可能求值失败 —— Vivado 会在实现阶段重读
+#    （该文件是 used_in implementation）。
+#    最终是否生效以 get_clocks 的结果为准（见文件末尾验证方法）。
+# ---------------------------------------------------------------------
+create_clock -period 41.667 -name cam_pclk [get_ports io_pclk]
+
+# 时钟不确定性：OV5640 的 PCLK 由内部 PLL 产生，抖动比板载晶振大。
+# 0.5 ns 是保守估计 —— 24 MHz 周期 41.7 ns，这点余量微不足道，
+# 但能避免把 PLL 抖动当成路径延迟问题来查。
+set_clock_uncertainty -setup 0.5 [get_clocks cam_pclk]
+
+
+# =====================================================================
+#  第二层：跨时钟域声明（已启用 —— 本设计最关键的一条）
+# =====================================================================
+
+# ---------------------------------------------------------------------
+#  ⚠⚠ PCLK 域与系统时钟域必须声明为异步
+#
+#  PCLK 来自 OV5640（24 MHz），clk_fpga_0 来自 PS（100 MHz），
+#  两者**完全独立、相位无关**。它们之间的通路只有一条：
+#      dvp_capture 内部的 async_fifo（格雷码指针跨域）
+#
+#  不声明为异步组的话，Vivado 会去分析"PCLK 域 → sysclk 域"的
+#  路径 —— 那条路径的建立/保持**物理上不可能满足**，
+#  于是报出一堆无法修复的违例，把真正的问题淹没掉。
+#
+#  声明之后跨域路径不再被分析。
+#  ⚠ 前提是跨域逻辑本身正确（异步 FIFO / 两级同步器）——
+#    这个约束只是让工具不报假违例，**不会让错误的跨域设计变正确**。
+#    跨域实现见 rtl/async_fifo.v 与 rtl/README.md。
+#
+#  ─────────────────────────────────────────────────────────────────
+#  ⚠ 为什么用 -of_objects [get_clocks] 而不是直接写时钟名
+#  ─────────────────────────────────────────────────────────────────
+#  XDC 的执行**早于 link_design**，此时设计对象还没建立。
+#
+#  如果写成 `-group [get_clocks -quiet cam_pclk]`：
+#    综合阶段 cam_pclk 还没创建（它是本文件前面 create_clock 建的，
+#    但设计未 link，get_clocks 可能返回空），
+#    于是报 [Vivado 12-4739] No valid object(s) found for '-group ...'
+#
+#  写成 `-group [get_clocks -of_objects [get_ports cam_pclk]]`：
+#    括号内的表达式同样在设计 link 后才求值，
+#    但 Vivado 会把它记为"待解析"，link 后自动补齐 ——
+#    这才是官方推荐的写法。
+#
+#  ⚠ 无论哪种写法，综合阶段的 CRITICAL WARNING 都可能出现，
+#    因为综合读 XDC 时设计还没 link。**关键看实现阶段**：
+#    Vivado 会对 used_in_implementation 的文件重读一次。
+#    验证方式见文件末尾。
+# ---------------------------------------------------------------------
+# ⚠⚠ 时钟名不要靠猜 —— 这里是本项目实际踩过的一个坑
+#
+#  原来 filter 写的是 `*processing_system7_0*FCLK_CLK0`，但：
+#    * **BD 里 PS7 的实例名是 `ps7`**，不是 `processing_system7_0`
+#    * 它输出的系统时钟综合后叫 **`clk_fpga_0`**
+#  过滤器一个都匹配不到 → 那个 group 为空 → 报：
+#      [Vivado 12-5201] cannot set the clock group when only one
+#                       non-empty group remains
+#      [Vivado 12-4739] No valid object(s) found for '-group ...'
+#
+#  ⚠ 这两条报错是**报得对**的 —— 它在告诉你"两组约束里有一组是空的"。
+#    遇到别去改 set_clock_groups 的写法，要去查真实时钟名。
+#
+#  查实方法（综合后执行）：
+#      open_run synth_1
+#      get_clocks        # 列出所有时钟名（本项目实测：clk_fpga_0 / cam_pclk / ...）
+#      get_ports         # 列出所有顶层端口名
+set_clock_groups -asynchronous \
+    -group [get_clocks -of_objects [get_ports io_pclk]] \
+    -group [get_clocks -of_objects [get_pins -quiet -hier \
+        -filter {NAME =~ "*ps7*FCLK_CLK0"}]]
+
+# 主系统时钟的周期由 BD 自动约束（FCLK_CLK0 = 100 MHz，周期 10 ns），
+# 这里不重复 create_clock，避免与 BD 生成的约束冲突。
+# 若需要显式确认，跑起来后用 `get_clocks` 查看即可。
+
+
+# =====================================================================
+#  第三层：摄像头引脚（PMOD-CAMERA v1.0）
+#
+#  硬件：**MUSE LAB PMOD-CAMERA v1.0**，公头，
+#        与 PYNQ-Z2 的 Pmod 母座**直插**，无需转接板、无需焊接。
+#
+#  ─────────────────────────────────────────────────────────────────
+#  ⚠⚠ 端口命名用 io_* 而不是 cam_*
+#  ─────────────────────────────────────────────────────────────────
+#  这块模块与"纯输入摄像头"不同：**XCLK 要由 FPGA 输出**，
+#  **SDA 是双向**。所以不能沿用 cam_* 那套全输入的命名。
+#
+#  ⚠ 这意味着 BD 里的 dvp_capture 例化必须相应接线：
+#      io_xclk → Clocking Wizard 出来的 24MHz（FPGA 输出）
+#      io_sda  → sccb_master 的 sda_o（经 IOBUF，见下）
+#      io_scl  → sccb_master 的 scl
+#    其余 io_d[*] / io_pclk / io_href / io_vsync → dvp_capture
+#
+#  ─────────────────────────────────────────────────────────────────
+#  ⚠⚠ 引脚编号：**标准 Pmod 编号**（2026-09-22 按模块丝印实测更正）
+#  ─────────────────────────────────────────────────────────────────
+#  **本文件原先按"镜像编号"推导，那个推导是错的** —— 它让 14 个信号
+#  全部接错，是"摄像头不出图"排查了一个月的真正根因。详见文末更正记录。
+#
+#  实测依据：**直接读模块丝印**（PMOD A / PMOD B 两个连接器，
+#  每个 12 针都有信号名丝印）。丝印给出的电源脚是：
+#        5=GND  6=3V3  11=GND  12=3V3
+#  **这正是 Pmod 规范的标准位置**（第 5/6 列是电源），
+#  而"镜像"解读会把电源推到 5/6/7/8 —— 两者不相容。
+#  既然丝印符合标准规范，模块用的就是**标准编号**。
+#
+#  ─────────────────────────────────────────────────────────────────
+#  信号 → 物理位 → PYNQ 端口 对照（2026-09-22 实测版）
+#  ─────────────────────────────────────────────────────────────────
+#  模块丝印（PMOD A，两排各 6 针）：
+#       1 NC      2 PCLK    3 HREF   4 SCL    5 GND   6 3V3
+#       7 NC      8 XCLK    9 VSYNC 10 SDA   11 GND  12 3V3
+#
+#  模块丝印（PMOD B）：
+#       1 D7      2 D5      3 D3     4 D1     5 GND   6 3V3
+#       7 D6      8 D4      9 D2    10 D0    11 GND  12 3V3
+#
+#  Pmod 规范编号：第 N 列 上行 = ja[2N-2]、下行 = ja[2N-1]
+#       列1→ja[0]/ja[4]  列2→ja[1]/ja[5]  列3→ja[2]/ja[6]  列4→ja[3]/ja[7]
+#       列5→GND/GND      列6→3V3/3V3
+#
+#  由此得（⚠ **Y18 / U18 未被使用**，正对应模块的 pin1 / pin7 = NC）：
+#       XCLK  → pin 8  → ja[5] → U19
+#       PCLK  → pin 2  → ja[1] → Y19
+#       HREF  → pin 3  → ja[2] → Y16
+#       VSYNC → pin 9  → ja[6] → W18
+#       SCL   → pin 4  → ja[3] → Y17
+#       SDA   → pin 10 → ja[7] → W19
+#
+#  交叉验证：新映射留空的恰好是 Y18/U18 —— 与模块 NC 脚一一对应 ✓
+#  （旧的错误映射把 XCLK 送到 Y18 = 模块 pin1 = NC，摄像头因此
+#    永远收不到主时钟；把 io_pclk 从 U18 读 = 模块 pin7 = NC，
+#    因此恒 1。两个"恒 1"现象由此得到解释。）
+#  ─────────────────────────────────────────────────────────────────
+
+# XCLK：⚠ 这是 **output**（FPGA 产生 24MHz 给摄像头）
+#   ⚠ XCLK 输出**不需要**时钟专用脚 —— 数据流是 FPGA → 模块，
+#     不经过 BUFG，所以可以放在普通 IO（这里就是 ja[5]=U19）。
+set_property -dict { PACKAGE_PIN U19 IOSTANDARD LVCMOS33 } [get_ports io_xclk]
+
+# VSYNC / SDA / HREF / SCL 都是双向或输入
+set_property -dict { PACKAGE_PIN W18 IOSTANDARD LVCMOS33 } [get_ports io_vsync]
+set_property -dict { PACKAGE_PIN W19 IOSTANDARD LVCMOS33 } [get_ports io_sda]
+set_property -dict { PACKAGE_PIN Y16 IOSTANDARD LVCMOS33 } [get_ports io_href]
+set_property -dict { PACKAGE_PIN Y17 IOSTANDARD LVCMOS33 } [get_ports io_scl]
+
+# PCLK：⚠ 在 Pmod A 上（不是 Pmod B）
+#
+#  ⚠⚠ 必须加 CLOCK_DEDICATED_ROUTE FALSE（2026-09-22 实测，见下） ——
+#     这是**引脚映射修正后暴露出的新问题**，根因是模块的引脚排布：
+#
+#       模块 PCLK 在 pin 2 → ja[1] → **Y19**（普通 IO）
+#       模块 XCLK 在 pin 8 → ja[5] → U19（CCIO）← 但 XCLK 是输出
+#       模块 pin 7 = NC     → ja[4] → U18（CCIO）← 空脚
+#
+#     **Pmod A 上唯一两个 CCIO（时钟能力）脚是 U18/U19**，而它们
+#     在模块上分别对应 **NC 和 XCLK** —— 都不是 PCLK。
+#     即：**PCLK 的物理位置（pin2）与 FPGA 的时钟专用脚不相交**，
+#     这是模块引脚排布决定的**固有冲突**，无解，只能 override。
+#
+#     不加会直接**布线失败**（不是警告）：
+#        ERROR: [Place 30-574] Poor placement for routing between
+#               an IO pin and BUFG
+#        Clock Rule: rule_gclkio_bufg  Status: FAILED
+#        Rule Description: An IOB driving a BUFG must use a CCIO
+#               in the same half side of chip as the BUFG
+#
+#  ── 风险评估（为什么可以接受）──
+#    非专用路径会引入额外的**时钟插入延时**，导致 PCLK 与数据
+#    的采样关系发生偏移。但：
+#      · PCLK 仅 **24 MHz**，周期 **41.7 ns**
+#      · 输入延时约束窗口只有 **1.5 ns**（见下方 set_input_delay）
+#      · 几十倍余量，典型插入延时（几 ns）不足以吃掉它
+#
+#  ⚠ **必须靠实现后的时序报告验证**，不能想当然。判据：
+#      · clk_fpga_0 / cam_pclk 组 WNS 是否为正
+#      · 若为负 → 下调采集方式或改用 oversampling（见 rtl/README.md）
+#
+#  ⚠ 这是本项目**唯一一处** "明知不推荐但仍必须用"的 override ——
+#    理由是硬件引脚排布的物理限制，不是图省事。
+set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets io_pclk_IBUF]
+
+
+set_property -dict { PACKAGE_PIN Y19 IOSTANDARD LVCMOS33 } [get_ports io_pclk]
+
+# ---- J3 → Pmod B（数据线）----
+set_property -dict { PACKAGE_PIN V16 IOSTANDARD LVCMOS33 } [get_ports { io_d[6] }]
+set_property -dict { PACKAGE_PIN W16 IOSTANDARD LVCMOS33 } [get_ports { io_d[4] }]
+set_property -dict { PACKAGE_PIN V12 IOSTANDARD LVCMOS33 } [get_ports { io_d[2] }]
+set_property -dict { PACKAGE_PIN W13 IOSTANDARD LVCMOS33 } [get_ports { io_d[0] }]
+set_property -dict { PACKAGE_PIN W14 IOSTANDARD LVCMOS33 } [get_ports { io_d[7] }]
+set_property -dict { PACKAGE_PIN Y14 IOSTANDARD LVCMOS33 } [get_ports { io_d[5] }]
+set_property -dict { PACKAGE_PIN T11 IOSTANDARD LVCMOS33 } [get_ports { io_d[3] }]
+set_property -dict { PACKAGE_PIN T10 IOSTANDARD LVCMOS33 } [get_ports { io_d[1] }]
+
+# ---- 输入延时：DVP 是源同步接口 ----
+# 数据由摄像头在 PCLK 边沿输出，用 set_input_delay 而不是普通建立/保持。
+# 1.5 ns 保守（24 MHz 周期 41.7 ns，余量充足）。
+set_input_delay -clock cam_pclk -max 1.5 \
+    [get_ports { io_d[*] io_href io_vsync }]
+set_input_delay -clock cam_pclk -min 0.5 \
+    [get_ports { io_d[*] io_href io_vsync }]
+
+# ---- XCLK 输出（FPGA → 摄像头）----
+#
+# ⚠ XCLK 不需要 set_output_delay。
+#
+#  原因是它**不是数据线**，而是摄像头的**主时钟输入**。
+#  set_output_delay 描述的是"数据相对时钟的相位关系"，
+#  而 XCLK 本身就是那个"时钟"。给时钟输出加输出延时是概念错误。
+#
+#  XCLK 的时序由 **Clocking Wizard 的输出相移**决定：
+#  摄像头在 XCLK 驱动下产生 PCLK，两者有内部延迟。
+#  通常把 XCLK 做 0° 相移即可；若实测 PCLK 采样窗口不佳，
+#  再调 Clocking Wizard 的 output phase（见 bd_video.tcl 里 CW 的配置）。
+#
+#  ⚠ 约束层面这里只需要确认 XCLK 是 output 且已连到 CW 的输出。
+
+# ---- SCCB 双向总线 ----
+# SDA 是开漏双向线：FPGA 通过 IOBUF 驱动/释放，外部上拉决定空闲电平。
+# ⚠ 必须加 PULLUP —— 模块上通常已有 4.7k，但多一个内部上拉无害；
+#   若模块缺上拉，这里能兜底（内部上拉较弱，长走线可能不够）。
+set_property PULLUP true [get_ports io_sda]
+set_property PULLUP true [get_ports io_scl]
+
+# SCL 由 FPGA 驱动（推挽足够，模块端也是开漏但 FPGA 主动驱动没问题）
+# 说明：sccb_master 的 scl 是推挽输出，不像标准 I2C 那样开漏。
+# 对 OV5640 这类只做从机的器件，推挽 SCL 是可行的（很多 FPGA 方案都这样）。
+
+
+
+# =====================================================================
+#  第四层：HDMI 输出引脚
+#
+#  ⚠ 待 BD 补齐端口 —— 当前引脚数量对不上，光写 XDC 解决不了。
+#
+#  ─────────────────────────────────────────────────────────────────
+#  为什么现在不能启用
+#  ─────────────────────────────────────────────────────────────────
+#  当前 bd_video 导出的 HDMI 端口是**并行视频信号**：
+#
+#      hdmi_vid_out_data          (O, 16bit)  ← 并行像素数据
+#      hdmi_vid_out_hsync         (O)
+#      hdmi_vid_out_vsync         (O)
+#      hdmi_vid_out_active_video  (O)         ← 即 DE
+#      hdmi_vid_out_field / hblank / vblank
+#
+#  但 HDMI 物理接口要的是 **TMDS 差分对**，含一个**独立的时钟对**：
+#
+#      hdmi_tx_clk_p / hdmi_tx_clk_n     ← 像素时钟的 TMDS 对
+#      hdmi_tx_d_p[0..2] / _n[0..2]      ← 三个数据通道
+#
+#  问题：**BD 里没有像素时钟输出**（v_axi4s_vid_out 的
+#  C_HAS_ASYNC_CLK=0，vid_io_out 不携带时钟）。
+#  所以引脚数量对不上，必须先改 BD。
+#
+#  ─────────────────────────────────────────────────────────────────
+#  补齐需要做的两件事（BD 改动，不在本次范围）
+#  ─────────────────────────────────────────────────────────────────
+#  1. 产生像素时钟：从 clk_fpga_0 经 MMCM 分频得 25.175 MHz
+#     （480p@60 的像素时钟）或 27 MHz（720p@60），引出为外部端口
+#  2. 加 TMDS 编码器：把并行 RGB + 同步信号编码成 3 对 TMDS
+#     （8b/10b + OSERDESE2 串行化）
+#
+#  PYNQ-Z2 的 HDMI **直连 PL 的 TMDS 引脚**，板上无 ADV7511 之类
+#  的编码芯片 —— 这正是它支持 HDMI 输入的原因，也意味着 TMDS
+#  编码必须自己在 PL 里做。
+#
+#  ─────────────────────────────────────────────────────────────────
+#  引脚表（取自 TUL 原厂 PYNQ-Z2_v1.0_master.xdc，非推测）
+#  ─────────────────────────────────────────────────────────────────
+#
+#  信号              引脚   IOSTANDARD
+#  hdmi_tx_clk_p     L16    TMDS_33
+#  hdmi_tx_clk_n     L17    TMDS_33
+#  hdmi_tx_d_p[0]    K17    TMDS_33
+#  hdmi_tx_d_n[0]    K18    TMDS_33
+#  hdmi_tx_d_p[1]    K19    TMDS_33
+#  hdmi_tx_d_n[1]    J19    TMDS_33
+#  hdmi_tx_d_p[2]    J18    TMDS_33
+#  hdmi_tx_d_n[2]    H18    TMDS_33
+#  hdmi_tx_hpdn      R19    LVCMOS33
+#  hdmi_tx_cec       G15    LVCMOS33
+#
+#  ⚠ D 通道的 p/n 引脚号**不是连续配对的**
+#    （d_p[1]=K19 而 d_n[1]=J19，跨了引脚号）。
+#    这是原厂 XDC 的原始数据，抄写时别"顺手排序"。
+#
+#  ─────────────────────────────────────────────────────────────────
+#  模板（端口补齐后取消注释）
+#  ─────────────────────────────────────────────────────────────────
+#
+# set_property -dict { PACKAGE_PIN L16 IOSTANDARD TMDS_33 } [get_ports hdmi_tx_clk_p]
+# set_property -dict { PACKAGE_PIN L17 IOSTANDARD TMDS_33 } [get_ports hdmi_tx_clk_n]
+# set_property -dict { PACKAGE_PIN K17 IOSTANDARD TMDS_33 } [get_ports { hdmi_tx_d_p[0] }]
+# set_property -dict { PACKAGE_PIN K18 IOSTANDARD TMDS_33 } [get_ports { hdmi_tx_d_n[0] }]
+# set_property -dict { PACKAGE_PIN K19 IOSTANDARD TMDS_33 } [get_ports { hdmi_tx_d_p[1] }]
+# set_property -dict { PACKAGE_PIN J19 IOSTANDARD TMDS_33 } [get_ports { hdmi_tx_d_n[1] }]
+# set_property -dict { PACKAGE_PIN J18 IOSTANDARD TMDS_33 } [get_ports { hdmi_tx_d_p[2] }]
+# set_property -dict { PACKAGE_PIN H18 IOSTANDARD TMDS_33 } [get_ports { hdmi_tx_d_n[2] }]
+# set_property -dict { PACKAGE_PIN R19 IOSTANDARD LVCMOS33 } [get_ports hdmi_tx_hpdn]
+
+
+# ─────────────────────────────────────────────────────────────────────
+#  ⚠ 当前状态（2026-09-16）：HDMI 尚未接通，比特流用临时豁免生成
+# ─────────────────────────────────────────────────────────────────────
+#
+#  上面这段引脚约束**还是注释状态** —— 因为 BD 导出的 22 个
+#  `hdmi_vid_out_*` 端口是**并行视频**，与 TMDS 差分对数量对不上
+#  （缺像素时钟、缺编码器）。
+#
+#  为了让比特流能生成，用了**临时措施**：
+#      constraints/video_io_hdmi_tmp.xdc   ← 把两条 DRC 降级
+#      constraints/hdmi_drc_hook.tcl       ← write_bitstream 的 pre-hook
+#
+#  ⚠ 代价：那 22 个端口的**具体引脚无法约束**，比特流里是悬空的
+#     —— 我实测过，Vivado **拒绝**把没引脚的端口写进比特流
+#     （[DRC UCIO-1] Unconstrained Logical Port），
+#     所以只能降级 DRC 而不是"随便指派引脚"。
+#
+#  ⚠ 上板注意事项：**不要接 HDMI 线**。悬空 IO 电平不确定，
+#     接显示器无效。CNN 通路与 HDMI 完全解耦，不受影响。
+#
+#  ── 方案 B（TMDS 编码器）做完后要做的三件事 ──
+#    1. 取消注释上面的引脚约束
+#    2. **删掉** video_io_hdmi_tmp.xdc 和 hdmi_drc_hook.tcl
+#    3. 从 create_project.tcl 里去掉 pre-hook 那段设置
+#
+#  完整计划见 vivado/README.md 的「HDMI 通路（方案 B）」章节。
+
+# =====================================================================
+#  第五层：调试信号与通用约束（已启用）
+# =====================================================================
+
+# ---------------------------------------------------------------------
+#  摄像头统计寄存器
+#
+#  dvp_capture 的 frame_cnt / line_cnt 是**状态指示**（给人看的），
+#  不是数据通路 —— 读到的值晚几拍不影响功能。
+#
+#  ⚠ 层次路径严格 = 顶层实例名/BD 实例名/模块实例名
+#      bd_video_i / dvp_capture_0 / inst
+#    这三个名字任何一个变了（改 BD 实例名、改 wrapper 名）这条约束都会
+#    静默失效。改 BD 后请确认路径仍然正确。
+# ---------------------------------------------------------------------
+set_false_path -from [get_cells -quiet -hier \
+    -filter {NAME =~ "*dvp_capture_0/inst/frame_cnt_reg*"}]
+set_false_path -from [get_cells -quiet -hier \
+    -filter {NAME =~ "*dvp_capture_0/inst/line_cnt_reg*"}]
+
+# ---------------------------------------------------------------------
+#  PS 侧固定信号
+#
+#  ⚠ 这里**不要**写 `set_false_path -from [get_ports DDR_*]`。
+#
+#  那是从原 Sobel 工程的约束抄来的，但在这版 BD 里**无效** ——
+#  本 BD 的 PS7 **没有把 DDR / FIXED_IO 引到顶层**（BD 里没勾
+#  "Make External"），所以：
+#      get_ports DDR_*         → 空列表
+#      set_false_path -from 空 → 报 [Vivado 12-4739] No valid object(s)
+#
+#  ⚠ 而且**原工程里同样是无效的** —— 抄过来只是把问题一起搬过来。
+#
+#  这些端口本来就不需要 false_path：PS 的 DDR/FIXED_IO 由 PS7 硬核
+#  自己管理，不参与 PL 的时序分析。不写这条约束是对的。
+#
+#  如果以后确实把 DDR 引到顶层（比如自己接 DDR 芯片），再按实际
+#  端口名补约束。**先跑 get_ports 确认端口存在，再写约束。**
+# ---------------------------------------------------------------------
+# （此处原本有两条 set_false_path，已删除 —— 见上面的说明）
+
+
+# =====================================================================
+#  附录：XDC 写法的三条硬性限制（都是本项目实际踩到的）
+#
+#  1. **不能用 if / for 等控制流**
+#     报 [Designutils 20-1307]，且只是 CRITICAL WARNING —— 流程照跑、
+#     约束静默失效。想要"条件生效"就用 `get_* -quiet`：
+#     空列表上的约束命令是安全的 no-op。
+#
+#  2. **不能用 puts 之类的一般 Tcl 命令**
+#     同样限制在约束命令子集内。
+#
+#  3. **XDC 的执行时机早于 link_design**
+#     `get_ports` 在此时可能返回空，依赖端口的约束会被跳过。
+#     Vivado 会在实现阶段对 `used_in implementation` 的文件重新读取，
+#     所以最终能生效 —— 但**不要依赖这一点**，
+#     涉及端口的约束要确认它真的出现了（看综合/实现日志的
+#     "Parsing XDC File" 段落，以及最终 get_clocks / get_property 结果）。
+#
+#  本次验证方式：
+#      vivado -mode batch -source vivado/test_video_io_xdc.tcl
+#    它会综合一遍并检查 cam_pclk 与异步时钟组是否真的生效。
+# =====================================================================
+
+
+# =====================================================================
+#  上电前验证（⚠ 必做 —— 插错方向会烧板）
+#
+#  ✅ **2026-09-22 已完成实测** —— 方法比万用表更直接：
+#     **读模块丝印**（见第三层说明）。丝印电源脚 = 标准 Pmod 位置，
+#     映射已按此更正，不再是"镜像"推导。
+#
+#  ⚠ 下面这段是**更正前的旧步骤**，保留作为方法参考（通断检测本身没错）。
+#     但**不必再按"镜像假设"去验证** —— 那个假设已被推翻。
+#
+#  ─────────────────────────────────────────────────────────────────
+#  通用的 Pmod 通断复核法（换模块时仍适用）
+#  ─────────────────────────────────────────────────────────────────
+#
+#  ① 量模块：找出连接器上哪两个物理针是 3V3 与 GND
+#     - 3V3：点模块上某个电解电容的正极或 LDO 输出脚，扫各针
+#     - GND：点任意螺丝孔或 GND 铺铜，扫各针
+#
+#  ② 量 PYNQ-Z2：Pmod 上哪两个物理针是 3V3 与 GND
+#     - GND 可点 Micro-USB 外壳；3V3 可点板上其他 3V3 点
+#
+#  ③ 对比：两边的 3V3 与 GND 必须落在**相同的物理列**
+#     ✓ 对上 → 可以插
+#     ✗ 对不上 → **不要插**，映射有误，需重做
+#
+#  ④ 最后：量模块 3V3 与 GND 之间**不短路**
+#     （应为几 kΩ 以上，不是 0 Ω —— 0 Ω 说明模块本身有问题）
+#
+#  ─────────────────────────────────────────────────────────────────
+#  验证通过后的接线自检（上电后，用 ILA 或 LED）
+#  ─────────────────────────────────────────────────────────────────
+#
+#  1. io_xclk 应有 24 MHz 输出 —— 示波器或 ILA 探一下
+#  2. io_scl 在 sccb_master 跑起来后应有 100 kHz 方波
+#  3. io_pclk 在摄像头上电后就应有输出（**不受 SCCB 配置影响** ——
+#     OV5640 只要有时钟和供电就会吐 PCLK，所以它比 cfg_error 更能
+#     定位"模块到底活没活"）
+#  4. io_href / io_vsync 应有周期性脉冲（这几条要配置成功后才会有）
+#
+#  ⚠ **第 3 条是最好的判据**（2026-09-22 修正）：
+#    · io_pclk 有波形 → 模块活着（有电、有时钟）→ 问题在 SDA/SCL
+#    · io_pclk 无波形 → 模块没工作 → 查 XCLK 有没有真正送到、
+#      以及模块供电
+#    它把"接线错"和"没供电/模块坏"分开，而这正是之前卡住的地方。
+# =====================================================================
