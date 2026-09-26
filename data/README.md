@@ -63,8 +63,6 @@ gray = np.fromfile('golden_96x96_gray.bin',     dtype=np.uint8).reshape(96, 96)
 > ```bash
 > python host/gesture_golden.py --input frame.bin --roi 160 80 320 320 --no-thresh --out golden_gray.bin
 > ```
-> ⚠ 该脚本**不在本仓库**（属 Python 侧工具，见 HANDOFF.md「两处边界」），
->    需从完整仓库的 `host/` 取。
 
 ## 自己造新样本
 
@@ -77,8 +75,15 @@ python host/capture_frame.py --image 你的图.jpg --out frame.bin --png preview
 python host/gesture_golden.py --input frame.bin --roi 160 80 320 320 --out golden.bin
 ```
 
-> ⚠ 上面两个脚本都在完整仓库的 `host/` 里，**不在本仓库**。
-> 本仓库只提供**已生成好的** `frame_640x480_rgb565.bin` + golden，
+> ✅ **这两个脚本就在本仓库的 `host/` 里**（2026-09-26 搬入）。
+> `gesture_golden.py` 的定位是「**预处理链的 Python 参考实现**」——
+> 它与 `src/HLS/gesture_ref.cpp`（C++ golden）和 HLS 实现**三方对拍**，
+> 三者必须逐位一致。所以它算 PL 侧的语义权威，不是"PC 侧工具"。
+>
+> ⚠ 它还有个自检：`python host/gesture_golden.py --self-test`
+> （5 项性质检查，秒级）。**改过它之后先跑这个。**
+>
+> 本仓库另外还提供**已生成好的** `frame_640x480_rgb565.bin` + golden，
 > 供 CNN 侧直接开工。
 
 > ⚠ **ROI 三处必须一致**：生成输入时用的图 / 板上 `config()` / golden 的 `--roi`。

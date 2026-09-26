@@ -119,9 +119,13 @@ th   夹到 [0, 255]
 ### 工具在哪
 
 ```
-完整仓库 complete_project_source/host/gesture_golden.py
-⚠ 不在 gesture_pl 里（它属 PC 侧）—— 找 PL 侧要，或从完整仓库取
+host/gesture_golden.py          ← ✅ 就在本仓库里（2026-09-26 搬入）
+host/capture_frame.py           ← 图片转 RGB565 也在这里
 ```
+
+> 它是「**预处理链的 Python 参考实现**」—— 与 `src/HLS/gesture_ref.cpp`
+> （C++ golden）和 HLS 实现三方对拍，三者逐位一致。
+> 另有自检：`python host/gesture_golden.py --self-test`
 
 ### 造一张
 

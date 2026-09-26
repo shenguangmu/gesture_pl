@@ -32,8 +32,15 @@ PL 的交付物是**比特流 + `.hwh` + 报告**，都是语言无关的。
 > 因为 `.bit` 是硬件描述，**驱动是"说怎么用它"** ——
 > 没有驱动，比特流没法验证。`src/sw/`（PS 侧 C 驱动）同理。
 >
-> 所以 `host/` 里是 `gesture_overlay.py`（PL 驱动）及其验证脚本。
-> **PC 侧那些工具仍然不在这里**（golden / auto_roi / capture_frame ...）。
+> 所以 `host/` 里是：**PL 驱动**（`gesture_overlay.py`）、**预处理链的
+> Python 参考实现**（`gesture_golden.py`，与 `src/HLS/gesture_ref.cpp`
+> 三方对拍的那个）、以及相关验证脚本。
+>
+> ⚠ **`gesture_golden.py` 算 PL 侧**，因为它是**语义权威之一** ——
+> 和 `src/HLS/` 是配对的，分开就自相矛盾。**CNN 侧造训练数据也靠它。**
+>
+> **仍然不在本仓库**（真·PC 侧，且没有被任何文档引用）：
+> `auto_roi.py` / `roi_analysis.py` / `bench_ps_baseline.py` 等。
 > 详见 `host/README.md`，那里也写了**与完整仓库的重复问题**。
 
 ### 2. 本目录**不含比特流**
@@ -62,7 +69,7 @@ bash src/RTL/run_iverilog.sh
 **期望看到**：
 
 ```
-回归汇总: 3 通过, 0 失败
+回归汇总: 4 通过, 0 失败
 *** ALL RTL TESTS PASSED ***
 ```
 
@@ -180,7 +187,7 @@ bash build/tools/rebuild_all.sh --upload     # 再传板 + 核 md5
 | 部分 | 状态 |
 |---|---|
 | HLS 处理链 | ✅ csim + csynth + cosim 全过，所有循环 `II = 1` |
-| RTL 外设 | ✅ 3/3 TB PASSED |
+| RTL 外设 | ✅ **4/4** TB PASSED |
 | BD / 时序 / 比特流 | ✅ DRC 0 Errors |
 | **静态图喂入** | ✅ **板上实测：与 golden 逐字节一致（0/9216）** |
 | **摄像头通路** | ⚠ **未通**（卡在 SCCB，`cfg_error=1`）—— **已不是关键路径** |

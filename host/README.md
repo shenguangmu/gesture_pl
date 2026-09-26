@@ -30,40 +30,69 @@
 |---|---|---|
 | `gesture_overlay.py` | **PL 驱动本体** —— `GesturePipeline` 类，封装预处理链 + 两个 DMA | ⚠ 不能（要真的 overlay），但可离线自检 |
 | `test_overlay_offline.py` | 驱动**离线自检**（70 项），不进 pynq | ✅ 能（已挂 CI）|
+| **`gesture_golden.py`** | **预处理链的 Python 参考实现**（造训练数据的主力）| ✅ 能（`--self-test` 秒级）|
+| `capture_frame.py` | 任意图片 → 640×480 RGB565 | ✅ 能 |
 | `usb_camera_run.py` | USB(UVC) 摄像头 → PL 预处理链 | ⚠ 探测模式能，喂数据不能 |
 | `run_static_frame_on_board.py` | 静态图喂 DDR + 与 golden 对拍（最小示例）| ⚠ 不能 |
 | `hdmi_bringup.py` | **HDMI 分步 bring-up**：配 v_tc → 配 vdma → 写彩条 | ⚠ 不能 |
 
-**不在本目录**（属 PC 侧，仍在完整仓库）：`gesture_golden.py`（golden 参考实现）、
-`auto_roi.py`、`capture_frame.py`、`bench_ps_baseline.py` 等。
+> **`gesture_golden.py` 为什么算 PL 侧**（而不是"PC 侧工具"）：
+> 它自称「预处理链的 **Python 参考实现**」，与 `src/HLS/gesture_ref.cpp`
+> （C++ golden）和 HLS 实现**三方对拍**，三者必须逐位一致。
+> 它是**语义权威**之一 —— 和 `src/HLS/` 是配对的，分开就自相矛盾。
+
+**仍然不在本仓库**（真·PC 侧）：`auto_roi.py`（跟手 ROI 算法）、
+`roi_analysis.py`、`bench_ps_baseline.py`（PS 基线）、`pynq_serial.py`、
+`push.py`、`run.py`、`dump_frame.py`。**它们没有被任何文档引用**，
+所以没有"文档让你用、但文件不在"的问题。
 
 ---
 
 ## ⚠ 与完整仓库的重复问题（**必须知道**）
 
-本目录的 `gesture_overlay.py` / `usb_camera_run.py` / `test_overlay_offline.py` /
-`run_static_frame_on_board.py` **是从完整仓库 `complete_project_source/host/`
-原样复制来的**（搬运时逐字节一致，md5 已核）。
+本目录的下列文件**是从完整仓库 `complete_project_source/host/` 原样复制来的**
+（搬运时逐字节一致，md5 已核）：
 
-**完整仓库里那 5 个消费者脚本**（`bringup_check.py` / `push.py` / `run.py`
-/ `run_static_frame_on_board.py` / `test_overlay_offline.py`）**仍然 import 它**。
-
-**∴ 现在有两份 `gesture_overlay.py`，改了会分叉。**
-
-| 改了哪里 | 要做什么 |
-|---|---|
-| 在**本仓库**改了驱动 | **必须**同步回完整仓库（否则那边的脚本会用到旧驱动）|
-| 在完整仓库改了驱动 | **必须**同步过来 |
-
-⚠ 在解决之前，**改驱动后请比对两处 md5**：
-
-```bash
-md5sum host/gesture_overlay.py \
-       /e/complete_project_source/host/gesture_overlay.py
+```
+gesture_overlay.py          改过一处（见下）
+gesture_golden.py           改过一处（见下）
+usb_camera_run.py           原样
+capture_frame.py            原样
+test_overlay_offline.py     原样
+run_static_frame_on_board.py 原样
 ```
 
-> **根治方向**（尚未做，需要更大的决定）：让完整仓库的那 5 个消费者脚本
-> 直接 import 本仓库的驱动（去掉副本），或者干脆把驱动职责整个收敛到一处。
+**∴ 这两份会分叉。** 完整仓库里还有脚本 import 它们：
+
+| 文件 | 完整仓库里谁在用 |
+|---|---|
+| `gesture_overlay.py` | `bringup_check.py` / `push.py` / `run.py` / `run_static_frame_on_board.py` / `test_overlay_offline.py` |
+| `gesture_golden.py` | `bench_ps_baseline.py` |
+
+**改任意一个，都要同步另一边**：
+
+```bash
+# 比对两处是否一致
+for f in gesture_overlay.py gesture_golden.py usb_camera_run.py \
+         capture_frame.py test_overlay_offline.py run_static_frame_on_board.py; do
+  a=$(md5sum host/$f | cut -d' ' -f1)
+  b=$(md5sum /e/complete_project_source/host/$f 2>/dev/null | cut -d' ' -f1)
+  [ "$a" = "$b" ] && echo "  ✓ $f" || echo "  ✗ 分叉了 $f"
+done
+```
+
+### ⚠ 2026-09-26 搬入时**只改了一处**，请看是否要回灌
+
+`gesture_golden.py` 的 `--self-test` 第 5 项原来是**坏的**（用 320×320 的 ROI
+去套 320×240 的图，`roi_y` 算出 −40，索引越界）。**这个 bug 在完整仓库里还在。**
+
+我改成了 `roi = min(320, w, h)`，前两组结果不变、第三组从崩溃变正常。
+**输出契约未变**（与板上 golden 仍 0/9216 不一致，已验）。
+
+→ **完整仓库那份要不要一起修？** 不修的话它继续一跑就崩。
+
+> **根治方向**（尚未做，需要更大的决定）：让完整仓库的脚本
+> 直接 import 本仓库的，去掉副本。
 > 现在这样做是因为**当时的任务只要求搬 `usb_camera_run.py`**，
 > 而它依赖驱动 —— 所以驱动是跟着进来的，不是重新决定的。
 
