@@ -31,7 +31,8 @@
 | `board-bringup-guide.md` | 上板实测流程 + 分级验证 + 硬阻塞清单 |
 | `board-cheatsheet.md` | 板上常用操作速查 |
 | `board-test-log-2026-09-2{1,2,3}.md` | 三次上板实测记录（含各自发现的根因） |
-| `pl-to-ps-handoff.md` | **给 PS / CNN 侧的交付说明** |
+| `cnn-handoff-12directions.md` | ⭐ **给 PS / CNN 侧的交接（当前版）** —— 12 方向 + 二值化 |
+| `pl-to-ps-handoff.md` | 同上（较旧；接口/联调部分仍有效）|
 | `gui-reproduction-guide.md` | 全程鼠标操作的复现流程 |
 | `上板测试操作手册.docx / .pdf` | 生成的操作手册 |
 
