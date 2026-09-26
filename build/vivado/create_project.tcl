@@ -34,7 +34,6 @@ set IP_DIR      ""
 set RUN_SYNTH   1
 set KEEP_EXIST  0
 set BD_NAME     "bd_video"
-
 # ---------------------------------------------------------------------
 #  参数解析
 # ---------------------------------------------------------------------
@@ -54,6 +53,27 @@ set HERE      [file normalize [file dirname [info script]]]
 #   所以仓库根要上溯**两级**（原来是 .. 即仓库根，现在 .. / .. 才是）。
 set PROJ_ROOT [file normalize [file join $HERE .. ..]]
 set PROJ_DIR  [file join $HERE $PROJ_NAME]
+
+# ---------------------------------------------------------------------
+#  第三方 IP 仓库（Digilent vivado-library 的子集）
+#
+#  只包含 HDMI 输出要用的两个东西：
+#      third_party/digilent/rgb2dvi_v1_2/    TMDS 编码器
+#      third_party/digilent/if/tmds_v1_0/    它依赖的 tmds 接口定义
+#
+#  ⚠ 随仓库带（而不是引用仓库外的绝对路径）是为了**自包含** ——
+#    赛题 §3.3.4 要求「工程可由他人从零复现」，外部绝对路径会让
+#    换台机器就建不起来。出处与许可见 third_party/README.md。
+# ---------------------------------------------------------------------
+set DIGILENT_LIB [file normalize [file join $PROJ_ROOT third_party digilent]]
+if {![file exists "$DIGILENT_LIB/rgb2dvi_v1_2/component.xml"]} {
+    puts "\n!!! 找不到第三方 IP 仓库: $DIGILENT_LIB"
+    puts "    需要 third_party/digilent/rgb2dvi_v1_2/component.xml"
+    puts "    见 third_party/README.md 的出处说明\n"
+    close_project
+    exit 1
+}
+puts ">>> 第三方 IP 仓库: $DIGILENT_LIB"
 
 puts "====================================================================="
 puts " 建立手势识别工程"
@@ -104,12 +124,13 @@ puts ">>> 已把 Netlist 29-160 降为 INFO（PS7 IP 自生成 XDC 的已知重�
 # ---------------------------------------------------------------------
 #  1. 加入 RTL 源（本项目手写的 Verilog）
 #
-#  ⚠ 五个都要加：
-#      dvp_capture   采集
-#      async_fifo    被 dvp_capture 例化（漏了会找不到依赖）
-#      sccb_master   SCCB 配置
-#      iobuf_wrap    SDA 双向缓冲（BD 不能直接例化 IOBUF 原语）
-#      ov5640_regs   寄存器配置表 ROM
+#  ⚠ 六个都要加：
+#      dvp_capture       采集
+#      async_fifo        被 dvp_capture 例化（漏了会找不到依赖）
+#      sccb_master       SCCB 配置
+#      iobuf_wrap        SDA 双向缓冲（BD 不能直接例化 IOBUF 原语）
+#      ov5640_regs       寄存器配置表 ROM
+#      axis_rgb565_888   HDMI 通路的位宽转换（VDMA 16bit → vid_out 24bit）
 # ---------------------------------------------------------------------
 set rtl_files [list \
     dvp_capture.v \
@@ -117,6 +138,7 @@ set rtl_files [list \
     sccb_master.v \
     iobuf_wrap.v \
     ov5640_regs.v \
+    axis_rgb565_888.v \
 ]
 set n_rtl 0
 foreach f $rtl_files {
@@ -144,15 +166,20 @@ puts ">>> 已加入 $n_rtl 个 RTL 源"
 # ---------------------------------------------------------------------
 if {$IP_DIR eq ""} {
     # 覆盖两种流程的产物：
-    #   命令行（run_gesture.tcl）-> build/gesture_comp/solution*/impl/ip
+    #   命令行（run_gesture.tcl）-> gesture_comp/solution*/impl/ip
     #   GUI（Vitis 组件）        -> <组件目录>/<work_dir>/hls/impl/ip
-    # ⚠ 目录重排（2026-09-26）后，HLS 产物约定落在 <repo>/build/gesture_comp/。
-    #   旧位置保留在列表末尾作回退。
+    #
+    # ⚠⚠ HLS 产物在**仓库根**的 `gesture_comp/`，不在 build/ 下。
+    #   原因（2026-09-26 实测）：Vitis HLS 2025.2 在工程目录比仓库根
+    #   深两级时会把设计文件的注册路径算错成 `../src/HLS/...`
+    #   → 设计文件不进 csim 编译清单 → csim 链接失败。
+    #   放回仓库根就正常。详见 src/HLS/run_gesture.tcl 的说明。
+    #   下面仍保留 build/ 与 src_hls/ 作回退（旧布局/他人机器）。
     set patterns [list \
-        "$PROJ_ROOT/build/gesture_comp/solution*/impl/ip" \
-        "$PROJ_ROOT/build/gesture_comp/*/impl/ip" \
         "$PROJ_ROOT/gesture_comp/solution*/impl/ip" \
         "$PROJ_ROOT/gesture_comp/*/impl/ip" \
+        "$PROJ_ROOT/build/gesture_comp/solution*/impl/ip" \
+        "$PROJ_ROOT/build/gesture_comp/*/impl/ip" \
         "$PROJ_ROOT/src_hls/gesture_comp/solution*/impl/ip" \
         "$PROJ_ROOT/*/*/hls/impl/ip" \
         "$PROJ_ROOT/*/hls/impl/ip" \
@@ -179,17 +206,35 @@ if {$IP_DIR eq "" || ![file exists "$IP_DIR/component.xml"]} {
     exit 1
 }
 
-puts ">>> 注册 IP 仓库: $IP_DIR"
-set_property ip_repo_paths $IP_DIR [current_project]
+puts ">>> 注册 IP 仓库（两个）:"
+puts "      [1] $IP_DIR"
+puts "      [2] $DIGILENT_LIB"
+# ⚠⚠ 两个都要注册。`ip_repo_paths` 是 **Tcl 列表属性**：
+#    写单个字符串会**覆盖**而不是追加，第二个仓库就找不到了。
+# ⚠ 而且 bd_video.tcl 里还有一处会再设一次这个属性 —— 那里必须
+#    同样传列表，否则会把这里设的冲掉（见该文件的 IP_REPO 处理）。
+set_property ip_repo_paths [list $IP_DIR $DIGILENT_LIB] [current_project]
 update_ip_catalog -rebuild
 
+# 校验：HLS 的预处理 IP（BD 的 M02 口依赖它，缺了会悬空报错）
 set g_defs [get_ipdefs -quiet *gesture_preproc*]
 if {[llength $g_defs] == 0} {
-    puts "\n!!! IP 未能被 Vivado 识别，请检查 $IP_DIR"
+    puts "\n!!! HLS 的 gesture_preproc IP 未能被 Vivado 识别，请检查 $IP_DIR"
     close_project
     exit 1
 }
-puts ">>> 识别到 IP: $g_defs"
+puts ">>> 识别到 HLS IP: $g_defs"
+
+# 校验：Digilent 的 rgb2dvi（HDMI 输出依赖它）
+set d_defs [get_ipdefs -quiet *rgb2dvi*]
+if {[llength $d_defs] == 0} {
+    puts "\n!!! rgb2dvi IP 未能被 Vivado 识别，请检查 $DIGILENT_LIB"
+    puts "    （接口定义 if/tmds_v1_0 也必须在同一仓库根下，否则会报"
+    puts "      [BD 41-52] Could not find the abstraction definition）"
+    close_project
+    exit 1
+}
+puts ">>> 识别到 Digilent IP: $d_defs"
 
 # ---------------------------------------------------------------------
 #  3. 建 Block Design
@@ -198,8 +243,13 @@ puts ">>> 识别到 IP: $g_defs"
 #    不传的话它会跳过 gesture_preproc + dma_in/dma_out，
 #    于是 ic_ctrl 的 M02/M03/M04 与 ic_hp3 悬空，
 #    脚本末尾的 AXI 检查会直接报错退出（那个检查是对的）。
+#
+#  ⚠ DIGILENT_LIB 是**独立变量**，不是塞进 IP_REPO 变成列表 ——
+#    bd_video.tcl 里 `IP_REPO ne ""` 还兼着 has_gesture 的判断，
+#    改成列表会牵连那段逻辑。两个变量各自表达各自的仓库。
 # ---------------------------------------------------------------------
-set ::IP_REPO $IP_DIR
+set ::IP_REPO      $IP_DIR
+set ::DIGILENT_LIB $DIGILENT_LIB
 source "$HERE/$BD_NAME.tcl"
 
 # ---------------------------------------------------------------------
@@ -277,17 +327,10 @@ if {[file exists $xdc]} {
     puts ">>> 已加入约束: $xdc"
 }
 
-# HDMI 端口的临时豁免（方案 A）
-#
-# ⚠ 这个文件**不是**引脚约束，它只是把 bitgen 的两条 DRC 降级，
-#   让比特流能生成。真正的 HDMI 引脚约束（TMDS）留到方案 B。
-#   ⚠ **方案 B 做完后要把它和 hdmi_drc_hook.tcl 一起删掉。**
-set xdc_hdmi "$HERE/constraints/video_io_hdmi_tmp.xdc"
-if {[file exists $xdc_hdmi]} {
-    add_files -fileset constrs_1 -norecurse $xdc_hdmi
-    puts ">>> 已加入 HDMI 临时约束: $xdc_hdmi"
-    puts "    ⚠ 22 个 hdmi_vid_out_* 端口在比特流里悬空 —— 上板时勿接 HDMI"
-}
+# ⚠ 原先这里还会加入 `video_io_hdmi_tmp.xdc`（HDMI 端口的 DRC 豁免）。
+#   2026-09-26 方案 B 完成后**已删除** —— HDMI 端口现在有真实的 TMDS
+#   引脚约束（见 video_io.xdc 第四层），不再需要豁免。
+#   那个 `BITSTREAM.CONFIG.UNUSEDPIN PULLNONE` 已移进 video_io.xdc。
 
 update_compile_order -fileset sources_1
 
@@ -296,33 +339,25 @@ update_compile_order -fileset sources_1
 # ---------------------------------------------------------------------
 if {$RUN_SYNTH} {
 
-    # ⚠⚠ 必须在 launch impl 之前设好 pre-hook
+    # ── 2026-09-26：HDMI 的 DRC 豁免与 pre-hook **已移除** ──
     #
-    #  HDL 里导出的 22 个 `hdmi_vid_out_*` 端口目前**没有引脚约束**
-    #  （TMDS 编码器还没做），bitgen 的 DRC 会拒绝：
-    #      [DRC NSTD-1] Unspecified I/O Standard
-    #      [DRC UCIO-1] Unconstrained Logical Port
-    #      ERROR: [Vivado 12-1345] Error(s) found during DRC. Bitgen not run.
+    #  过去这里做过两件"临时措施"，因为 HDML 端口悬空、bitgen 会拒绝：
+    #      · video_io_hdmi_tmp.xdc    把 NSTD-1 / UCIO-1 两条 DRC 降级
+    #      · hdmi_drc_hook.tcl        write_bitstream 的 pre-hook（同样降级）
+    #    代价是那 22 个 hdmi_vid_out_* 端口在比特流里**悬空**
+    #    —— 当时明确告诫过"上板不要接 HDMI 线"。
     #
-    #  ⚠ Vivado 拦得**对** —— 不能把没指定的端口随便绑到 IO 上。
+    #  ✅ 方案 B（TMDS 编码器）已完成：
+    #      · bd_video.tcl 里加了 clk_wiz_pix + rgb2dvi_0 + rgb565_888_0
+    #      · 导出的端口从 22 根并行信号变成 8 根 TMDS 差分对
+    #      · video_io.xdc 第四层启用真实引脚约束（L16/L17/K17... TMDS_33）
+    #      · 两个临时文件与这段 pre-hook **一并删除**
     #
-    #  ⚠ 关键：用 `set_property SEVERITY {Warning}` 在工程里直接设**无效**，
-    #    因为 run 是独立进程。报错信息里明确说了要用 **pre-hook**：
-    #      "add this command to a .tcl file and add that file as a
-    #       pre-hook for write_bitstream step"
+    #  ⚠ 保留这条注释是为了**防止有人"恢复"它们** —— 现在端口有真实
+    #    引脚了，再降级 DRC 只会掩盖真正的问题（比如引脚漏配）。
     #
-    #  pre-hook 的副作用（必须知道）：那 22 个端口在比特流里**悬空**，
-    #  **上板时不要接 HDMI 线**。详见 constraints/video_io_hdmi_tmp.xdc。
-    #
-    #  ⚠⚠ 方案 B（TMDS 编码器）做完后，删掉这个 pre-hook 和
-    #     video_io_hdmi_tmp.xdc，启用 video_io.xdc 第四层的真实引脚约束。
-    set hook "$HERE/constraints/hdmi_drc_hook.tcl"
-    if {[file exists $hook]} {
-        set_property STEPS.WRITE_BITSTREAM.TCL.PRE $hook [get_runs impl_1]
-        puts ">>> 已设置 write_bitstream pre-hook（HDMI 端口临时豁免）"
-    } else {
-        puts "WARN: 找不到 $hook —— bitgen 会因 HDMI 端口未约束而失败"
-    }
+    #  ⚠ 也不要加 `set_property SEVERITY {Warning}` 进工程来"图省事"：
+    #    run 是独立进程，那样设**无效**（当年就是因此才用 pre-hook）。
 
     # ---- 带重试的 run 启动 ----
     #

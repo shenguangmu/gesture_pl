@@ -4,8 +4,9 @@
 #  ⚠⚠ 本文件**不是**源仓库的副本，有一处**关键差异**：
 #
 #     本工程的 `build/` 是**源码目录**（Tcl / 约束 / 报告），
-#     不是构建产物目录 —— 产物落在 `build/gesture_comp/` 与
-#     `build/vivado/gesture_system/` 里。
+#     不是构建产物目录 —— Vivado 产物落在
+#     `build/vivado/gesture_system/` 里，HLS 产物在**仓库根**
+#     的 `gesture_comp/`（原因见下面 HLS 那节的说明）。
 #
 #     所以**绝对不能**写一条 `build/` —— 那会把整个构建脚本
 #     （rebuild_all.sh / bd_video.tcl / video_io.xdc）全忽略掉。
@@ -16,8 +17,17 @@
 # ==============================================================
 #  HLS 产物（由 src/HLS/run_gesture.tcl 生成）
 # ==============================================================
-# 产物目录由 run_gesture.tcl 决定：<repo>/build/gesture_comp/
-build/gesture_comp/
+# ⚠⚠ 产物目录在**仓库根**下（`<repo>/gesture_comp/`），不是 build/ 下。
+#
+#   原因（2026-09-26 实测）：Vitis HLS 2025.2 在**工程目录比仓库根深两级**
+#   时，会把设计文件的注册路径算错成带 `..` 的形式：
+#       name="../src/HLS/gesture_preproc.cpp"
+#   该路径解析后指向 `build/src/HLS/...`（不存在）→ 设计文件**不进
+#   csim 的编译清单** → 链接期报 undefined symbol → csim 失败。
+#   对照实验：同样的脚本，`comp_dir` 放回仓库根（1 层）就一切正常
+#   （csim.mk 的 HLS_SOURCES 恢复成 3 个文件）。
+#   所以这不是配置问题，是 Vitis 的行为 —— 只能顺着它放。
+gesture_comp/
 *_comp/
 
 # ==============================================================
@@ -44,6 +54,19 @@ build/vivado/**/*.srcs/**/ip/*/*/*/*.dcp
 build/vivado/**/*.srcs/**/hdl/*_wrapper.v
 build/vivado/**/*.srcs/**/synth_1/
 build/vivado/**/*.srcs/**/utils_1/
+
+# ==============================================================
+#  XSA / 比特流 —— **有意不入库**
+# ==============================================================
+#   .xsa 是构建产物（含 .bit + .hwh），跑一次 rebuild_all.sh 就有。
+#   初始提交（2026-09-26）就没跟踪它，这里把约定**显式写下来** ——
+#   否则每次重建后 `git status` 都会冒出个未跟踪的 1.2 MB 文件，
+#   容易误加（二进制，git 每次全量存）。
+#
+#   ⚠ 验证过的比特流请存到仓库外的持久位置（见 HANDOFF.md），
+#     不要靠 git 保管 —— `/tmp` 会被清、而 .runs/ 被忽略。
+build/vivado/gesture_system/gesture_system.xsa
+build/vivado/gesture_system/gesture_system.runs/
 
 # ==============================================================
 #  utilization.rpt —— **有意入库**（2026-09-17 更正）

@@ -22,17 +22,24 @@
 #  ⚠ 目录约定（2026-09-26 重排后）
 #      <repo>/src/HLS/          HLS 源码
 #      <repo>/src/RTL/          RTL 源码
-#      <repo>/build/            **所有构建产物**（不入版本控制）
-#        ├── gesture_comp/      HLS 产物（run_gesture.tcl 输出到这里）
+#      <repo>/gesture_comp/     HLS 产物 —— ⚠ 在**仓库根**，不在 build/ 下
+#      <repo>/build/            构建脚本与 Vivado 产物
 #        ├── vivado/            工程与脚本
 #        ├── rebuild_*.log      构建日志
 #        └── tools/             本脚本
+#
+#  ⚠⚠ 为什么 gesture_comp/ 不在 build/ 下（别"顺手整理"回去）：
+#     Vitis HLS 2025.2 在工程目录比仓库根深两级时，会把设计文件的注册
+#     路径算错成 `../src/HLS/gesture_preproc.cpp`（解析后指向不存在的
+#     build/src/HLS/）→ 设计文件不进 csim 编译清单 → 链接失败。
+#     放回仓库根就正常。详见 src/HLS/run_gesture.tcl 的 comp_dir 注释。
 # =====================================================================
 set -euo pipefail
 
 # ⚠ 本脚本在 <repo>/build/tools/ 下 → 仓库根要上溯**两级**
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 BLD="$REPO/build"
+HLS_COMP="$REPO/gesture_comp"
 VITIS_RUN="/d/BaiduNetdiskDownload/2025.2/Vitis/bin/vitis-run.bat"
 VIVADO="/d/BaiduNetdiskDownload/2025.2/Vivado/bin/vivado.bat"
 BOARD="xilinx@192.168.2.99"
@@ -67,14 +74,14 @@ fi
 # ---------------------------------------------------------------------
 say "0/5  清理全部缓存（HLS + Vivado）"
 # ⚠ 三处都要删：只删工程目录不够，还有 HLS 产物、.Xil、残留的 .hls.failed
-rm -rf "$BLD/gesture_comp" "$REPO/.hls.failed" "$BLD/vivado/gesture_system"
+rm -rf "$HLS_COMP" "$REPO/.hls.failed" "$BLD/vivado/gesture_system"
 rm -rf "$BLD/vivado/.Xil" "$REPO/.Xil"
-echo "    已删: build/gesture_comp/  build/vivado/gesture_system/  .Xil/"
+echo "    已删: gesture_comp/  build/vivado/gesture_system/  .Xil/"
 
 # ⚠⚠ 确认真的删干净了。`rm -rf` 遇到占用文件会**部分失败**并继续 ——
 #   若不查，就会在**残缺的工程目录**上继续构建，产出不可信的比特流。
 #   2026-09-23 的教训：上面那道进程检查没拦住时，这一道是最后的防线。
-for d in "$BLD/gesture_comp" "$BLD/vivado/gesture_system"; do
+for d in "$HLS_COMP" "$BLD/vivado/gesture_system"; do
     if [ -e "$d" ]; then
         echo "!!! 清理失败，$d 仍然存在 —— 多半是有进程占着文件"
         echo "    先关掉 Vivado（tasklist | grep -i vivado）再重跑"
@@ -96,7 +103,7 @@ grep -q "TB PASSED" "$BLD/rebuild_hls.log" || {
 echo "    csim PASSED"
 
 # 记录 IP 指纹 —— 重建后对比用
-IP_FP=$(find "$BLD/gesture_comp/solution1/impl/ip" -name "*.v" -o -name "component.xml" \
+IP_FP=$(find "$HLS_COMP/solution1/impl/ip" -name "*.v" -o -name "component.xml" \
         | sort | xargs cat 2>/dev/null | md5sum | cut -c1-16)
 echo "    IP 指纹: $IP_FP"
 
@@ -115,6 +122,30 @@ XSA="$BLD/vivado/gesture_system/gesture_system.xsa"
 say "3/5  校验产物（时序 / DRC / use_ila / DMA 位宽）"
 grep -E "WNS|WHS" "$BLD/rebuild_vivado.log" | tail -2
 
+# ⚠⚠ 时序硬校验（2026-09-26 补）
+#
+#   原来这里**只打印不判定** —— 脚本的"硬校验三条"里其实只有两条
+#   （use_ila / DMA 位宽），时序那条从来没生效。2026-09-26 一次改动
+#   引入了 WNS −4.436 ns 的违例，脚本**照样跑完并报"完成"**，
+#   产出一个不能用的比特流。这就是补它的原因。
+#
+#   判据：WNS 与 WHS 都必须 ≥ 0。脚本已经会 grep 出这两行，这里再解析。
+WNS=$(grep -oE "WNS=[-0-9.]+" "$BLD/rebuild_vivado.log" | tail -1 | cut -d= -f2)
+WHS=$(grep -oE "WHS=[-0-9.]+" "$BLD/rebuild_vivado.log" | tail -1 | cut -d= -f2)
+if [ -z "$WNS" ]; then
+    echo "!!! 日志里找不到 WNS —— 无法判定时序，不能当作通过"; exit 1
+fi
+# ⚠ 用 awk 比较浮点（bash 只支持整数比较）
+awk -v w="$WNS" 'BEGIN{ exit (w < 0) ? 1 : 0 }' || {
+    echo "!!! WNS = $WNS ns（负）—— 时序违例，这个比特流不能用"; \
+    echo "    查最差路径: build/vivado/gesture_system/gesture_system.runs/impl_1/bd_video_wrapper_timing_summary_routed.rpt"; \
+    exit 1; }
+if [ -n "$WHS" ]; then
+    awk -v w="$WHS" 'BEGIN{ exit (w < 0) ? 1 : 0 }' || {
+        echo "!!! WHS = $WHS ns（负）—— hold 违例"; exit 1; }
+fi
+echo "    时序 OK：WNS = $WNS ns${WHS:+ / WHS = $WHS ns}"
+
 # ⚠ 硬性检查：这三条错一个，比特流就是废的
 grep -q "^set use_ila 0" bd_video.tcl || {
     echo "!!! bd_video.tcl 的 use_ila 不是 0 —— 会引入 hold 违例，且报告资源虚高"; exit 1; }
@@ -122,6 +153,60 @@ grep -q '"c_sg_length_width": \[ { "value": "24"' \
     gesture_system/gesture_system.srcs/sources_1/bd/bd_video/ip/bd_video_dma_in_0/bd_video_dma_in_0.xci \
     || { echo "!!! DMA c_sg_length_width 不是 24 —— 上板会卡死"; exit 1; }
 echo "    use_ila=0 ✓   c_sg_length_width=24 ✓"
+
+# ---- HDMI / TMDS 通路（2026-09-26 新增）----
+#
+# ⚠ 这几条针对的都是「参数没生效但不报错、只在上板表现为怪现象」的坑
+#   —— 本项目的 AXI DMA 位宽、MMCM 参数都栽过同一类。
+BDDIR="$BLD/vivado/gesture_system/gesture_system.srcs/sources_1/bd/bd_video"
+
+# ① 豁免文件必须已删除 —— 它们会把引脚漏配的错误**掩盖掉**
+for f in "$BLD/vivado/constraints/video_io_hdmi_tmp.xdc" \
+         "$BLD/vivado/constraints/hdmi_drc_hook.tcl"; do
+    [ -e "$f" ] && { echo "!!! HDMI DRC 豁免文件又出现了: $f"; \
+                     echo "    它会让引脚漏配静默通过 —— 方案 B 已完成，不该再有它"; exit 1; }
+done
+
+# ② rgb2dvi 必须实例化，且 kClkRange=2
+#    ⚠ 默认值 1 → VCO=像素时钟×5=371 MHz < 600 MHz 下限 → 锁不住 → 无输出
+#    ⚠ 用 glob 找而不是硬编码目录名 —— BD 生成的实例目录名带后缀
+#      （实际是 bd_video_rgb2dvi_0_0，不是 bd_video_rgb2dvi_0）
+R2D=$(ls "$BDDIR"/ip/*rgb2dvi*/*.xci 2>/dev/null | head -1)
+[ -n "$R2D" ] || { echo "!!! 找不到 rgb2dvi 实例（HDMI 通路没建起来）"; exit 1; }
+grep -q '"kClkRange": \[ { "value": "2"' "$R2D" || {
+    echo "!!! rgb2dvi 的 kClkRange 不是 2 —— VCO 会低于 600 MHz 锁不住，HDMI 无输出"; exit 1; }
+
+# ③ vid_io_out 必须解析成 24 位（与 rgb2dvi 的 vid_pData 对齐）
+#    ⚠ 不一定是 24 时只报 [BD 41-2384] WARNING 然后**截断**，颜色静默出错
+VO=$(ls "$BDDIR"/ip/*v_axi4s_vid_out*/*.xci 2>/dev/null | head -1)
+[ -n "$VO" ] || { echo "!!! 找不到 v_axi4s_vid_out 实例"; exit 1; }
+grep -q '"C_NATIVE_DATA_WIDTH": \[ { "value": "24"' "$VO" || {
+    echo "!!! vid_io_out 不是 24 位 —— 与 rgb2dvi 对不上（会静默截断）"; exit 1; }
+grep -q '"C_S_AXIS_TDATA_WIDTH": \[ { "value": "24"' "$VO" || {
+    echo "!!! s_axis 不是 24 位 —— 与 rgb565_888_0 的输出对不上"; exit 1; }
+
+# ④ 像素时钟 MMCM 参数（同样会被静默忽略的那类）
+PIX=$(ls "$BDDIR"/ip/*clk_wiz_pix*/*.xci 2>/dev/null | head -1)
+[ -n "$PIX" ] || { echo "!!! 找不到像素时钟 clk_wiz_pix —— 刷新率会不对"; exit 1; }
+grep -q '"MMCM_CLKFBOUT_MULT_F": \[ { "value": "37.125"' "$PIX" && \
+grep -q '"MMCM_DIVCLK_DIVIDE": \[ { "value": "5"'       "$PIX" || {
+    echo "!!! 像素时钟 MMCM 参数不对 —— 74.25 MHz 出不来（期望 M=37.125 / D=5）"; exit 1; }
+
+# ⑤ 位宽转换模块必须存在（VDMA 16bit → vid_out 24bit 的桥）
+ls "$BDDIR"/ip/*rgb565_888*/*.xci >/dev/null 2>&1 || {
+    echo "!!! 找不到 rgb565_888 转换模块 —— VDMA(16bit) 与 vid_out(24bit) 之间断了"; exit 1; }
+
+# ⑤ 从实现报告确认 TMDS 引脚真的绑上了
+#    ⚠ pin 约束写错端口名时是**静默 no-op**（空列表上约束安全跳过），
+#      所以必须回读，不能只看"跑完了"。
+IMPLLOG=$(ls -t "$BLD/vivado/gesture_system/gesture_system.runs/impl_1/"runme.log 2>/dev/null | head -1)
+if [ -n "$IMPLLOG" ]; then
+    n_pin=$(grep -c "hdmi_tmds" "$IMPLLOG" 2>/dev/null || echo 0)
+    [ "$n_pin" -eq 0 ] && echo "    ⚠ 实现日志里没提到 hdmi_tmds —— 引脚约束可能没生效（上板前请 report_io 复核）"
+fi
+
+echo "    rgb2dvi ✓  kClkRange=2 ✓  vid_out 24bit ✓  像素时钟 M=37.125/D=5 ✓  转换模块 ✓"
+echo "    HDMI DRC 豁免已清除 ✓"
 
 # ---------------------------------------------------------------------
 say "4/5  拆出 .bit / .hwh（PYNQ 要的是**改名后**的 hwh）"

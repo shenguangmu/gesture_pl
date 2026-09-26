@@ -1,7 +1,7 @@
 {
   "design": {
     "design_info": {
-      "boundary_crc": "0x5E370513970E0183",
+      "boundary_crc": "0x9063C6674B9B2D6B",
       "device": "xc7z020clg400-1",
       "gen_directory": "../../../../gesture_system.gen/sources_1/bd/bd_video",
       "name": "bd_video",
@@ -16,6 +16,10 @@
       "vdma": "",
       "v_tc": "",
       "v_axi4s_vid_out": "",
+      "clk_wiz_pix": "",
+      "rgb565_888_0": "",
+      "rgb2dvi_0": "",
+      "rst_pix": "",
       "dvp_capture_0": "",
       "clk_wiz_xclk": "",
       "sccb_0": "",
@@ -56,13 +60,14 @@
           "auto_us": ""
         },
         "m00_couplers": {}
-      }
+      },
+      "const_one": ""
     },
     "interface_ports": {
-      "hdmi_vid_out": {
+      "hdmi_tmds": {
         "mode": "Master",
-        "vlnv_bus_definition": "xilinx.com:interface:vid_io:1.0",
-        "vlnv": "xilinx.com:interface:vid_io_rtl:1.0",
+        "vlnv_bus_definition": "digilentinc.com:interface:tmds:1.0",
+        "vlnv": "digilentinc.com:interface:tmds_rtl:1.0",
         "hdl_attributes": {
           "LOCKED": {
             "value": "FALSE",
@@ -70,35 +75,25 @@
           }
         },
         "port_maps": {
-          "ACTIVE_VIDEO": {
-            "physical_name": "hdmi_vid_out_active_video",
+          "CLK_P": {
+            "physical_name": "hdmi_tmds_clk_p",
             "direction": "O"
           },
-          "DATA": {
-            "physical_name": "hdmi_vid_out_data",
+          "CLK_N": {
+            "physical_name": "hdmi_tmds_clk_n",
+            "direction": "O"
+          },
+          "DATA_P": {
+            "physical_name": "hdmi_tmds_data_p",
             "direction": "O",
-            "left": "15",
+            "left": "2",
             "right": "0"
           },
-          "FIELD": {
-            "physical_name": "hdmi_vid_out_field",
-            "direction": "O"
-          },
-          "HBLANK": {
-            "physical_name": "hdmi_vid_out_hblank",
-            "direction": "O"
-          },
-          "HSYNC": {
-            "physical_name": "hdmi_vid_out_hsync",
-            "direction": "O"
-          },
-          "VBLANK": {
-            "physical_name": "hdmi_vid_out_vblank",
-            "direction": "O"
-          },
-          "VSYNC": {
-            "physical_name": "hdmi_vid_out_vsync",
-            "direction": "O"
+          "DATA_N": {
+            "physical_name": "hdmi_tmds_data_n",
+            "direction": "O",
+            "left": "2",
+            "right": "0"
           }
         }
       }
@@ -566,10 +561,13 @@
         "has_run_ip_tcl": "true",
         "parameters": {
           "VIDEO_MODE": {
-            "value": "480p"
+            "value": "720p"
           },
           "enable_detection": {
             "value": "false"
+          },
+          "enable_generation": {
+            "value": "true"
           }
         }
       },
@@ -585,15 +583,251 @@
             "value": "11"
           },
           "C_HAS_ASYNC_CLK": {
-            "value": "0"
+            "value": "1"
           },
           "C_S_AXIS_VIDEO_DATA_WIDTH": {
             "value": "8"
           },
           "C_S_AXIS_VIDEO_FORMAT": {
-            "value": "0"
+            "value": "2"
           }
         }
+      },
+      "clk_wiz_pix": {
+        "vlnv": "xilinx.com:ip:clk_wiz:6.0",
+        "ip_revision": "17",
+        "xci_name": "bd_video_clk_wiz_pix_0",
+        "xci_path": "ip\\bd_video_clk_wiz_pix_0\\bd_video_clk_wiz_pix_0.xci",
+        "inst_hier_path": "clk_wiz_pix",
+        "has_run_ip_tcl": "true",
+        "parameters": {
+          "CLKOUT1_REQUESTED_OUT_FREQ": {
+            "value": "74.250"
+          },
+          "MMCM_CLKFBOUT_MULT_F": {
+            "value": "37.125"
+          },
+          "MMCM_CLKOUT0_DIVIDE_F": {
+            "value": "10.000"
+          },
+          "MMCM_DIVCLK_DIVIDE": {
+            "value": "5"
+          },
+          "OVERRIDE_MMCM": {
+            "value": "true"
+          },
+          "PRIMITIVE": {
+            "value": "MMCM"
+          },
+          "PRIM_IN_FREQ": {
+            "value": "100.000"
+          },
+          "RESET_TYPE": {
+            "value": "ACTIVE_LOW"
+          },
+          "USE_LOCKED": {
+            "value": "true"
+          },
+          "USE_RESET": {
+            "value": "true"
+          }
+        }
+      },
+      "rgb565_888_0": {
+        "vlnv": "xilinx.com:module_ref:axis_rgb565_888:1.0",
+        "ip_revision": "1",
+        "xci_name": "bd_video_rgb565_888_0_0",
+        "xci_path": "ip\\bd_video_rgb565_888_0_0\\bd_video_rgb565_888_0_0.xci",
+        "inst_hier_path": "rgb565_888_0",
+        "has_run_ip_tcl": "true",
+        "reference_info": {
+          "ref_type": "hdl",
+          "ref_name": "axis_rgb565_888",
+          "boundary_crc": "0x0"
+        },
+        "interface_ports": {
+          "m_axis": {
+            "mode": "Master",
+            "vlnv_bus_definition": "xilinx.com:interface:axis:1.0",
+            "vlnv": "xilinx.com:interface:axis_rtl:1.0",
+            "parameters": {
+              "TDATA_NUM_BYTES": {
+                "value": "3",
+                "value_src": "constant"
+              },
+              "TDEST_WIDTH": {
+                "value": "0",
+                "value_src": "constant"
+              },
+              "TID_WIDTH": {
+                "value": "0",
+                "value_src": "constant"
+              },
+              "TUSER_WIDTH": {
+                "value": "0",
+                "value_src": "constant"
+              },
+              "HAS_TREADY": {
+                "value": "1",
+                "value_src": "constant"
+              },
+              "HAS_TSTRB": {
+                "value": "0",
+                "value_src": "constant"
+              },
+              "HAS_TKEEP": {
+                "value": "0",
+                "value_src": "constant"
+              },
+              "HAS_TLAST": {
+                "value": "1",
+                "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "100000000",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "bd_video_ps7_0_FCLK_CLK0",
+                "value_src": "default_prop"
+              }
+            },
+            "port_maps": {
+              "TDATA": {
+                "physical_name": "m_axis_tdata",
+                "direction": "O",
+                "left": "23",
+                "right": "0"
+              },
+              "TLAST": {
+                "physical_name": "m_axis_tlast",
+                "direction": "O"
+              },
+              "TVALID": {
+                "physical_name": "m_axis_tvalid",
+                "direction": "O"
+              },
+              "TREADY": {
+                "physical_name": "m_axis_tready",
+                "direction": "I"
+              }
+            }
+          },
+          "s_axis": {
+            "mode": "Slave",
+            "vlnv_bus_definition": "xilinx.com:interface:axis:1.0",
+            "vlnv": "xilinx.com:interface:axis_rtl:1.0",
+            "parameters": {
+              "TDATA_NUM_BYTES": {
+                "value": "2",
+                "value_src": "constant"
+              },
+              "TDEST_WIDTH": {
+                "value": "0",
+                "value_src": "constant"
+              },
+              "TID_WIDTH": {
+                "value": "0",
+                "value_src": "constant"
+              },
+              "TUSER_WIDTH": {
+                "value": "0",
+                "value_src": "constant"
+              },
+              "HAS_TREADY": {
+                "value": "1",
+                "value_src": "constant"
+              },
+              "HAS_TSTRB": {
+                "value": "0",
+                "value_src": "constant"
+              },
+              "HAS_TKEEP": {
+                "value": "0",
+                "value_src": "constant"
+              },
+              "HAS_TLAST": {
+                "value": "1",
+                "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "100000000",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "bd_video_ps7_0_FCLK_CLK0",
+                "value_src": "default_prop"
+              }
+            },
+            "port_maps": {
+              "TDATA": {
+                "physical_name": "s_axis_tdata",
+                "direction": "I",
+                "left": "15",
+                "right": "0"
+              },
+              "TLAST": {
+                "physical_name": "s_axis_tlast",
+                "direction": "I"
+              },
+              "TVALID": {
+                "physical_name": "s_axis_tvalid",
+                "direction": "I"
+              },
+              "TREADY": {
+                "physical_name": "s_axis_tready",
+                "direction": "O"
+              }
+            }
+          }
+        },
+        "ports": {
+          "aclk": {
+            "type": "clk",
+            "direction": "I",
+            "parameters": {
+              "ASSOCIATED_BUSIF": {
+                "value": "m_axis:s_axis",
+                "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "100000000",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "bd_video_ps7_0_FCLK_CLK0",
+                "value_src": "default_prop"
+              }
+            }
+          }
+        }
+      },
+      "rgb2dvi_0": {
+        "vlnv": "digilentinc.com:ip:rgb2dvi:1.2",
+        "ip_revision": "7",
+        "xci_name": "bd_video_rgb2dvi_0_0",
+        "xci_path": "ip\\bd_video_rgb2dvi_0_0\\bd_video_rgb2dvi_0_0.xci",
+        "inst_hier_path": "rgb2dvi_0",
+        "has_run_ip_tcl": "true",
+        "parameters": {
+          "kClkRange": {
+            "value": "2"
+          },
+          "kGenerateSerialClk": {
+            "value": "true"
+          },
+          "kRstActiveHigh": {
+            "value": "false"
+          }
+        }
+      },
+      "rst_pix": {
+        "vlnv": "xilinx.com:ip:proc_sys_reset:5.0",
+        "ip_revision": "17",
+        "xci_name": "bd_video_rst_pix_0",
+        "xci_path": "ip\\bd_video_rst_pix_0\\bd_video_rst_pix_0.xci",
+        "inst_hier_path": "rst_pix",
+        "has_run_ip_tcl": "true"
       },
       "dvp_capture_0": {
         "vlnv": "xilinx.com:module_ref:dvp_capture:1.0",
@@ -935,7 +1169,7 @@
       },
       "gesture_preproc_0": {
         "vlnv": "user:hls:gesture_preproc:1.0",
-        "ip_revision": "2114801919",
+        "ip_revision": "2114803097",
         "xci_name": "bd_video_gesture_preproc_0_0",
         "xci_path": "ip\\bd_video_gesture_preproc_0_0\\bd_video_gesture_preproc_0_0.xci",
         "inst_hier_path": "gesture_preproc_0",
@@ -3105,6 +3339,22 @@
             ]
           }
         }
+      },
+      "const_one": {
+        "vlnv": "xilinx.com:ip:xlconstant:1.1",
+        "ip_revision": "10",
+        "xci_name": "bd_video_const_one_0",
+        "xci_path": "ip\\bd_video_const_one_0\\bd_video_const_one_0.xci",
+        "inst_hier_path": "const_one",
+        "has_run_ip_tcl": "true",
+        "parameters": {
+          "CONST_VAL": {
+            "value": "1"
+          },
+          "CONST_WIDTH": {
+            "value": "1"
+          }
+        }
       }
     },
     "interface_nets": {
@@ -3192,10 +3442,22 @@
           "ic_ctrl/S00_AXI"
         ]
       },
+      "rgb2dvi_0_TMDS": {
+        "interface_ports": [
+          "hdmi_tmds",
+          "rgb2dvi_0/TMDS"
+        ]
+      },
+      "rgb565_888_0_m_axis": {
+        "interface_ports": [
+          "rgb565_888_0/m_axis",
+          "v_axi4s_vid_out/video_in"
+        ]
+      },
       "v_axi4s_vid_out_vid_io_out": {
         "interface_ports": [
-          "hdmi_vid_out",
-          "v_axi4s_vid_out/vid_io_out"
+          "v_axi4s_vid_out/vid_io_out",
+          "rgb2dvi_0/RGB"
         ]
       },
       "v_tc_vtiming_out": {
@@ -3207,7 +3469,7 @@
       "vdma_M_AXIS_MM2S": {
         "interface_ports": [
           "vdma/M_AXIS_MM2S",
-          "v_axi4s_vid_out/video_in"
+          "rgb565_888_0/s_axis"
         ]
       },
       "vdma_M_AXI_MM2S": {
@@ -3230,10 +3492,34 @@
           "iobuf_sda_0/io_pad"
         ]
       },
+      "clk_wiz_pix_clk_out1": {
+        "ports": [
+          "clk_wiz_pix/clk_out1",
+          "v_tc/clk",
+          "v_axi4s_vid_out/vid_io_out_clk",
+          "rgb2dvi_0/PixelClk",
+          "rst_pix/slowest_sync_clk"
+        ]
+      },
+      "clk_wiz_pix_locked": {
+        "ports": [
+          "clk_wiz_pix/locked",
+          "rst_pix/dcm_locked"
+        ]
+      },
       "clk_wiz_xclk_clk_out1": {
         "ports": [
           "clk_wiz_xclk/clk_out1",
           "io_xclk"
+        ]
+      },
+      "const_one_dout": {
+        "ports": [
+          "const_one/dout",
+          "v_tc/clken",
+          "v_tc/gen_clken",
+          "v_axi4s_vid_out/aclken",
+          "v_axi4s_vid_out/vid_io_out_ce"
         ]
       },
       "io_d_1": {
@@ -3303,12 +3589,13 @@
           "vdma/m_axi_s2mm_aclk",
           "vdma/s_axis_s2mm_aclk",
           "vdma/m_axis_mm2s_aclk",
-          "v_tc/clk",
           "v_tc/s_axi_aclk",
           "v_axi4s_vid_out/aclk",
           "dvp_capture_0/aclk",
           "clk_wiz_xclk/clk_in1",
+          "clk_wiz_pix/clk_in1",
           "sccb_0/clk",
+          "rgb565_888_0/aclk",
           "gesture_preproc_0/ap_clk",
           "dma_in/s_axi_lite_aclk",
           "dma_in/m_axi_mm2s_aclk",
@@ -3319,7 +3606,8 @@
       "ps7_FCLK_RESET0_N": {
         "ports": [
           "ps7/FCLK_RESET0_N",
-          "rst_100m/ext_reset_in"
+          "rst_100m/ext_reset_in",
+          "rst_pix/ext_reset_in"
         ]
       },
       "rst_100m_peripheral_aresetn": {
@@ -3345,12 +3633,24 @@
           "gesture_preproc_0/ap_rst_n",
           "dma_in/axi_resetn",
           "dma_out/axi_resetn",
-          "v_tc/resetn",
           "v_axi4s_vid_out/aresetn",
           "vdma/axi_resetn",
           "dvp_capture_0/rst_n",
           "clk_wiz_xclk/resetn",
           "sccb_0/rst_n"
+        ]
+      },
+      "rst_pix_peripheral_aresetn": {
+        "ports": [
+          "rst_pix/peripheral_aresetn",
+          "v_tc/resetn",
+          "rgb2dvi_0/aRst_n"
+        ]
+      },
+      "rst_pix_peripheral_reset": {
+        "ports": [
+          "rst_pix/peripheral_reset",
+          "v_axi4s_vid_out/vid_io_out_reset"
         ]
       },
       "sccb_0_scl": {
@@ -3375,6 +3675,12 @@
         "ports": [
           "sccb_0/tbl_addr",
           "ov5640_regs_0/tbl_addr"
+        ]
+      },
+      "v_axi4s_vid_out_sof_state_out": {
+        "ports": [
+          "v_axi4s_vid_out/sof_state_out",
+          "v_tc/sof_state"
         ]
       }
     },

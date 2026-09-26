@@ -90,9 +90,10 @@ run_test() {
 # ---------------------------------------------------------------------
 #  各模块的自检
 # ---------------------------------------------------------------------
-run_test "dvp_capture"   "$TB_DIR/tb_dvp_capture.v" dvp_capture.v async_fifo.v
-run_test "sccb_master"   "$TB_DIR/tb_sccb_master.v" sccb_master.v
-run_test "ov5640_regs"   "$TB_DIR/tb_ov5640_regs.v" ov5640_regs.v
+run_test "dvp_capture"     "$TB_DIR/tb_dvp_capture.v" dvp_capture.v async_fifo.v
+run_test "sccb_master"     "$TB_DIR/tb_sccb_master.v" sccb_master.v
+run_test "ov5640_regs"     "$TB_DIR/tb_ov5640_regs.v" ov5640_regs.v
+run_test "axis_rgb565_888" "$TB_DIR/tb_axis_rgb565_888.v" axis_rgb565_888.v
 
 # ---------------------------------------------------------------------
 #  汇总

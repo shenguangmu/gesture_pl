@@ -32,6 +32,19 @@
 
 
 # =====================================================================
+#  bitstream 配置
+# =====================================================================
+# ⚠ 2026-09-26：这一条**从 video_io_hdmi_tmp.xdc 移过来的**。
+#   那个文件是 HDMI 未接通时的临时 DRC 豁免，做完方案 B（TMDS）后已删。
+#   但这条配置与「HDMI 接没接通」无关，是有意保留的：
+#     UNUSEDPIN PULLNONE = 未使用的引脚不加内部上下拉（Zynq 默认值）。
+#   显式写一遍是为了**留下痕迹** —— 将来有人看到这条，会知道
+#   "这里有意留了未约束的端口"，而不是漏配。
+#   ⚠ 不要设 PULLUP/PULLDOWN：那会消耗静态电流，且没有帮助。
+set_property BITSTREAM.CONFIG.UNUSEDPIN PULLNONE [current_design]
+
+
+# =====================================================================
 #  第一层：PCLK 时钟（已启用）
 # =====================================================================
 
@@ -283,103 +296,73 @@ set_property PULLUP true [get_ports io_scl]
 
 
 # =====================================================================
-#  第四层：HDMI 输出引脚
-#
-#  ⚠ 待 BD 补齐端口 —— 当前引脚数量对不上，光写 XDC 解决不了。
+#  第四层：HDMI 输出引脚（✅ 2026-09-26 已启用）
 #
 #  ─────────────────────────────────────────────────────────────────
-#  为什么现在不能启用
+#  背景：为什么这一段挂了这么久
 #  ─────────────────────────────────────────────────────────────────
-#  当前 bd_video 导出的 HDMI 端口是**并行视频信号**：
+#  PYNQ-Z2 的 HDMI **直连 PL 的 TMDS 引脚**，板上无 ADV7511 之类的
+#  编码芯片 → TMDS 编码必须自己在 PL 里做。
+#  在此之前 BD 只导出并行视频，且**根本没有像素时钟**，所以这一段
+#  只能是注释。同时靠两个临时文件把 bitgen 的 DRC 降级，
+#  代价是那批端口在比特流里**悬空**（当时告诫过"不要接 HDMI 线"）。
 #
-#      hdmi_vid_out_data          (O, 16bit)  ← 并行像素数据
-#      hdmi_vid_out_hsync         (O)
-#      hdmi_vid_out_vsync         (O)
-#      hdmi_vid_out_active_video  (O)         ← 即 DE
-#      hdmi_vid_out_field / hblank / vblank
-#
-#  但 HDMI 物理接口要的是 **TMDS 差分对**，含一个**独立的时钟对**：
-#
-#      hdmi_tx_clk_p / hdmi_tx_clk_n     ← 像素时钟的 TMDS 对
-#      hdmi_tx_d_p[0..2] / _n[0..2]      ← 三个数据通道
-#
-#  问题：**BD 里没有像素时钟输出**（v_axi4s_vid_out 的
-#  C_HAS_ASYNC_CLK=0，vid_io_out 不携带时钟）。
-#  所以引脚数量对不上，必须先改 BD。
+#  ✅ 2026-09-26 做完后，BD 侧已补齐：
+#     · clk_wiz_pix        像素时钟 74.25 MHz（720p60）
+#     · rgb2dvi_0          Digilent TMDS 编码器（kClkRange=2）
+#     · rgb565_888_0       VDMA 16bit → 24bit 位宽/位序转换
+#     · rst_pix            像素域复位（dcm_locked 接 MMCM locked）
+#     临时文件 video_io_hdmi_tmp.xdc / hdmi_drc_hook.tcl **已删除**。
 #
 #  ─────────────────────────────────────────────────────────────────
-#  补齐需要做的两件事（BD 改动，不在本次范围）
+#  端口名与引脚表
 #  ─────────────────────────────────────────────────────────────────
-#  1. 产生像素时钟：从 clk_fpga_0 经 MMCM 分频得 25.175 MHz
-#     （480p@60 的像素时钟）或 27 MHz（720p@60），引出为外部端口
-#  2. 加 TMDS 编码器：把并行 RGB + 同步信号编码成 3 对 TMDS
-#     （8b/10b + OSERDESE2 串行化）
+#  ⚠⚠ 端口名是 **hdmi_tmds_***，不是早期注释里写的 hdmi_tx_*。
+#     以「BD 实际导出」为准 —— 从生成的 wrapper 核实（2026-09-26）：
+#         hdmi_tmds_clk_p / hdmi_tmds_clk_n
+#         hdmi_tmds_data_p[2:0] / hdmi_tmds_data_n[2:0]
+#     引脚表本身取自 TUL 原厂 PYNQ-Z2_v1.0_master.xdc（非推测）。
 #
-#  PYNQ-Z2 的 HDMI **直连 PL 的 TMDS 引脚**，板上无 ADV7511 之类
-#  的编码芯片 —— 这正是它支持 HDMI 输入的原因，也意味着 TMDS
-#  编码必须自己在 PL 里做。
-#
-#  ─────────────────────────────────────────────────────────────────
-#  引脚表（取自 TUL 原厂 PYNQ-Z2_v1.0_master.xdc，非推测）
-#  ─────────────────────────────────────────────────────────────────
-#
-#  信号              引脚   IOSTANDARD
-#  hdmi_tx_clk_p     L16    TMDS_33
-#  hdmi_tx_clk_n     L17    TMDS_33
-#  hdmi_tx_d_p[0]    K17    TMDS_33
-#  hdmi_tx_d_n[0]    K18    TMDS_33
-#  hdmi_tx_d_p[1]    K19    TMDS_33
-#  hdmi_tx_d_n[1]    J19    TMDS_33
-#  hdmi_tx_d_p[2]    J18    TMDS_33
-#  hdmi_tx_d_n[2]    H18    TMDS_33
-#  hdmi_tx_hpdn      R19    LVCMOS33
-#  hdmi_tx_cec       G15    LVCMOS33
+#  信号                引脚   IOSTANDARD   端口名
+#  TMDS clk p          L16    TMDS_33      hdmi_tmds_clk_p
+#  TMDS clk n          L17    TMDS_33      hdmi_tmds_clk_n
+#  TMDS data0 p        K17    TMDS_33      hdmi_tmds_data_p[0]
+#  TMDS data0 n        K18    TMDS_33      hdmi_tmds_data_n[0]
+#  TMDS data1 p        K19    TMDS_33      hdmi_tmds_data_p[1]
+#  TMDS data1 n        J19    TMDS_33      hdmi_tmds_data_n[1]
+#  TMDS data2 p        J18    TMDS_33      hdmi_tmds_data_p[2]
+#  TMDS data2 n        H18    TMDS_33      hdmi_tmds_data_n[2]
 #
 #  ⚠ D 通道的 p/n 引脚号**不是连续配对的**
 #    （d_p[1]=K19 而 d_n[1]=J19，跨了引脚号）。
 #    这是原厂 XDC 的原始数据，抄写时别"顺手排序"。
 #
-#  ─────────────────────────────────────────────────────────────────
-#  模板（端口补齐后取消注释）
-#  ─────────────────────────────────────────────────────────────────
-#
-# set_property -dict { PACKAGE_PIN L16 IOSTANDARD TMDS_33 } [get_ports hdmi_tx_clk_p]
-# set_property -dict { PACKAGE_PIN L17 IOSTANDARD TMDS_33 } [get_ports hdmi_tx_clk_n]
-# set_property -dict { PACKAGE_PIN K17 IOSTANDARD TMDS_33 } [get_ports { hdmi_tx_d_p[0] }]
-# set_property -dict { PACKAGE_PIN K18 IOSTANDARD TMDS_33 } [get_ports { hdmi_tx_d_n[0] }]
-# set_property -dict { PACKAGE_PIN K19 IOSTANDARD TMDS_33 } [get_ports { hdmi_tx_d_p[1] }]
-# set_property -dict { PACKAGE_PIN J19 IOSTANDARD TMDS_33 } [get_ports { hdmi_tx_d_n[1] }]
-# set_property -dict { PACKAGE_PIN J18 IOSTANDARD TMDS_33 } [get_ports { hdmi_tx_d_p[2] }]
-# set_property -dict { PACKAGE_PIN H18 IOSTANDARD TMDS_33 } [get_ports { hdmi_tx_d_n[2] }]
-# set_property -dict { PACKAGE_PIN R19 IOSTANDARD LVCMOS33 } [get_ports hdmi_tx_hpdn]
+#  ⚠ 原厂表里还有 hdmi_tx_hpdn(R19) 与 hdmi_tx_cec(G15)。
+#    **本设计不导出这两个端口**（rgb2dvi 不带 HPDN/CEC），
+#    所以不加约束 —— 给不存在的端口写约束会被静默跳过或报
+#    [Vivado 12-4739]，两者都不好。
+# ---------------------------------------------------------------------
 
+set_property -dict { PACKAGE_PIN L16 IOSTANDARD TMDS_33 } [get_ports hdmi_tmds_clk_p]
+set_property -dict { PACKAGE_PIN L17 IOSTANDARD TMDS_33 } [get_ports hdmi_tmds_clk_n]
+set_property -dict { PACKAGE_PIN K17 IOSTANDARD TMDS_33 } [get_ports { hdmi_tmds_data_p[0] }]
+set_property -dict { PACKAGE_PIN K18 IOSTANDARD TMDS_33 } [get_ports { hdmi_tmds_data_n[0] }]
+set_property -dict { PACKAGE_PIN K19 IOSTANDARD TMDS_33 } [get_ports { hdmi_tmds_data_p[1] }]
+set_property -dict { PACKAGE_PIN J19 IOSTANDARD TMDS_33 } [get_ports { hdmi_tmds_data_n[1] }]
+set_property -dict { PACKAGE_PIN J18 IOSTANDARD TMDS_33 } [get_ports { hdmi_tmds_data_p[2] }]
+set_property -dict { PACKAGE_PIN H18 IOSTANDARD TMDS_33 } [get_ports { hdmi_tmds_data_n[2] }]
 
-# ─────────────────────────────────────────────────────────────────────
-#  ⚠ 当前状态（2026-09-16）：HDMI 尚未接通，比特流用临时豁免生成
-# ─────────────────────────────────────────────────────────────────────
+# ⚠⚠ 引脚生效的**验证不能写在这里** —— XDC 是 Tcl 的受限子集，
+#    **不支持 foreach / if / puts 等一般 Tcl 命令**（见本文件末尾的
+#    「三条硬性限制」）。写了会被解析器拒绝，且**只是 CRITICAL WARNING**
+#    —— 流程照跑、整段约束静默失效。
+#    （写这段时差点就加了断言循环，正是这个文件自己警告过的坑。）
 #
-#  上面这段引脚约束**还是注释状态** —— 因为 BD 导出的 22 个
-#  `hdmi_vid_out_*` 端口是**并行视频**，与 TMDS 差分对数量对不上
-#  （缺像素时钟、缺编码器）。
-#
-#  为了让比特流能生成，用了**临时措施**：
-#      constraints/video_io_hdmi_tmp.xdc   ← 把两条 DRC 降级
-#      constraints/hdmi_drc_hook.tcl       ← write_bitstream 的 pre-hook
-#
-#  ⚠ 代价：那 22 个端口的**具体引脚无法约束**，比特流里是悬空的
-#     —— 我实测过，Vivado **拒绝**把没引脚的端口写进比特流
-#     （[DRC UCIO-1] Unconstrained Logical Port），
-#     所以只能降级 DRC 而不是"随便指派引脚"。
-#
-#  ⚠ 上板注意事项：**不要接 HDMI 线**。悬空 IO 电平不确定，
-#     接显示器无效。CNN 通路与 HDMI 完全解耦，不受影响。
-#
-#  ── 方案 B（TMDS 编码器）做完后要做的三件事 ──
-#    1. 取消注释上面的引脚约束
-#    2. **删掉** video_io_hdmi_tmp.xdc 和 hdmi_drc_hook.tcl
-#    3. 从 create_project.tcl 里去掉 pre-hook 那段设置
-#
-#  完整计划见 vivado/README.md 的「HDMI 通路（方案 B）」章节。
+#    正确的验证方式（综合/实现之后，在 Tcl Console 或批处理脚本里）：
+#        report_io -file io.rpt          # 看 hdmi_tmds_* 有没有 LOC
+#        get_property PACKAGE_PIN [get_ports hdmi_tmds_clk_p]   # 应为 L16
+#    build/tools/rebuild_all.sh 的校验段会做这一步。
+
 
 # =====================================================================
 #  第五层：调试信号与通用约束（已启用）

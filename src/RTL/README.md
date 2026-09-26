@@ -21,6 +21,28 @@ bash rtl/run_iverilog.sh
 | `async_fifo.v` | 异步 FIFO（PCLK→sysclk 跨时钟域） | ✅ 由 dvp_capture TB 覆盖 |
 | `ov5640_regs.v` | OV5640 寄存器 ROM | ✅ TB PASSED (11/11)。**2026-09-17 已换为真表**（250 条，正点原子来源，固化 640×480 RGB565）。✅ **2026-09-21 上板已确认"表发出去了"**（ILA 抓到 `cfg_error=1`，事务有发出但无 ACK → 问题在 XCLK/接线，非表内容） |
 | `iobuf_wrap.v` | IOBUF 三态缓冲包装（SDA 双向） | ⚠️ **Functional 未验证**，但**已过综合/实现**（见下） |
+| `axis_rgb565_888.v` | HDMI 通路位宽转换：16bit RGB565 → 24bit | ✅ TB PASSED (18/18)。**2026-09-26 新增**，见下 |
+
+### ⚠ `axis_rgb565_888.v` 有一条**必须知道的非显然行为**
+
+**它输出的不是 RGB，是 RBG 序**（`[23:16]=R / [15:8]=B / [7:0]=G`）。
+
+不是笔误 —— 下游 Digilent `rgb2dvi` 的 `vid_pData` 就是 RBG 排列。
+依据是它的源码原文（`rgb2dvi.vhd:181-184`）：
+
+```vhdl
+-- for some reason vid_data is packed in RBG order
+pDataOut(2) <= vid_pData(23 downto 16);  -- red   is channel 2
+pDataOut(1) <= vid_pData(7 downto 0);    -- green is channel 1
+pDataOut(0) <= vid_pData(15 downto 8);   -- blue  is channel 0
+```
+
+⚠ 写成常识的 R-G-B 会导致 **绿蓝互换** —— 画面看着"像是对的"、
+只是颜色不对，是最难往位序上想的一类现象。TB 用纯红/纯绿/纯蓝
+三种纯色断言，正是为了把这类错误钉死在仿真阶段。
+
+⚠ 上板若发现**红蓝**互换（不是绿蓝），说明 DDR 里 RGB565 的字节序
+与此相反，把模块参数 `IN_BYTE_SWAP` 置 1。**用标准彩条验证，别猜。**
 
 ### ⚠ 一个模块有验证盲区
 

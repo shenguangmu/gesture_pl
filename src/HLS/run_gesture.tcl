@@ -25,9 +25,23 @@ set part_name  "xc7z020clg400-1"
 
 set top_name   "gesture_preproc"
 set syn_file   "${script_dir}/gesture_preproc.cpp"
-set tb_file    "${script_dir}/tb_gesture.cpp"
 set ref_file   "${script_dir}/gesture_ref.cpp"
 set hdr_files  "${script_dir}"
+
+# ⚠ testbench 在目录重排（2026-09-26）后移到了 <repo>/sim/tb/。
+#   与 src/RTL/run_iverilog.sh 的 TB 目录处理保持同一思路：
+#   先找新位置，找不到再回退旧位置（与源码同目录）。
+#   ⚠ 两处都找不到时必须**显式报错** —— 否则 Vitis 只会打印一行
+#     "找不到源文件"然后退出，看不出真正原因是目录结构变了。
+set tb_file ""
+foreach _cand [list "${repo_root}/sim/tb/tb_gesture.cpp" \
+                    "${script_dir}/tb_gesture.cpp"] {
+    if {[file exists $_cand]} { set tb_file $_cand; break }
+}
+if {$tb_file eq ""} {
+    puts "ERROR: 找不到 tb_gesture.cpp（试过 sim/tb/ 与 src/HLS/）"
+    exit 1
+}
 
 set do_csim    1
 set do_cosim   0
@@ -38,7 +52,28 @@ if {[info exists ::env(GESTURE_COSIM)]} { set do_cosim $::env(GESTURE_COSIM) }
 if {[info exists ::env(GESTURE_CLOCK)]} { set clock_ns $::env(GESTURE_CLOCK) }
 
 # 综合产物目录（.gitignore 已忽略 *_comp/）
-set comp_dir   "${repo_root}/build/gesture_comp"
+set comp_dir   "${repo_root}/gesture_comp"
+
+# ⚠⚠ comp_dir 必须在**仓库根**（只深一层），**不要**挪到 build/ 下。
+#
+#   2026-09-26 实测：Vitis HLS 2025.2 在 comp_dir 比仓库根深**两级**时，
+#   会把设计文件的注册路径算错 —— hls.app 里变成
+#       name="../src/HLS/gesture_preproc.cpp"     ← 带 `..`
+#   该路径解析后指向 `build/src/HLS/gesture_preproc.cpp`（不存在），
+#   于是设计文件**不进 csim 的编译清单**（csim.mk 的 HLS_SOURCES
+#   只剩 ref + tb 两项），链接期报
+#       undefined symbol: gesture_preproc(hls::stream<...>&, ...)
+#
+#   ⚠ 注意分工：TB 与参考实现注册的是**绝对路径**，不受影响；
+#     只有 `add_files`（设计文件）那条被转成了相对路径 —— 所以现象
+#     是"只有设计文件丢了"，很容易误判成 TB 或文件集的问题。
+#
+#   **对照实验**（同一脚本，只改 comp_dir）：放回仓库根 → hls.app 里
+#     变成 `src/HLS/gesture_preproc.cpp`（无 `..`），csim.mk 恢复三项，
+#     全流程通过。所以这不是配置问题，是 Vitis 的行为，只能顺着它。
+#
+#   ⚠ 改这里要同步改：create_project.tcl 的 IP 搜索路径、.gitignore、
+#     build/tools/rebuild_all.sh 的清理与查找路径。
 set sol_name   "solution1"
 
 puts "====================================================================="
@@ -67,6 +102,9 @@ open_project -reset $comp_dir
 
 set_top $top_name
 
+# ---------------------------------------------------------------------
+# 加入源文件（顺序与完整仓库一致，不要改）
+# ---------------------------------------------------------------------
 add_files -cflags "-I${hdr_files}" $syn_file
 
 # testbench 与参考实现一起加。参考实现里的函数不带 HLS pragma，

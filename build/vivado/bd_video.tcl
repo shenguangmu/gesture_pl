@@ -92,17 +92,37 @@ puts "   分辨率: ${H_ACTIVE}x${V_ACTIVE}"
 puts "====================================================================="
 
 # ---------------------------------------------------------------------
-#  0. 导入 HLS 导出的 IP（如果提供了路径）
+#  0. 导入 IP 仓库（HLS 预处理 + Digilent 第三方）
+#
+#  ⚠ 这里会**覆盖** create_project.tcl 设的 `ip_repo_paths`，
+#    所以两个仓库都要在这里重新注册一遍 —— 只在那里设会被这里冲掉。
+#
+#  ⚠ `IP_REPO` 的语义仍然是「HLS 预处理 IP 的路径」单个字符串：
+#    下面 §8 的 `has_gesture` 判断依赖它。所以第三方仓库用**独立变量**
+#    `DIGILENT_LIB` 传，而不是把它变成列表（那会牵连 has_gesture 逻辑）。
 # ---------------------------------------------------------------------
+if {![info exists DIGILENT_LIB]} { set DIGILENT_LIB "" }
+
+set _repos [list]
 if {$IP_REPO ne ""} {
     if {![file exists $IP_REPO]} {
         error "IP_REPO 不存在: $IP_REPO"
     }
-    set_property ip_repo_paths $IP_REPO [current_project]
+    lappend _repos $IP_REPO
+}
+if {$DIGILENT_LIB ne ""} {
+    if {![file exists "$DIGILENT_LIB/rgb2dvi_v1_2/component.xml"]} {
+        error "DIGILENT_LIB 里没有 rgb2dvi_v1_2/component.xml: $DIGILENT_LIB"
+    }
+    lappend _repos $DIGILENT_LIB
+}
+
+if {[llength $_repos] > 0} {
+    set_property ip_repo_paths $_repos [current_project]
     update_ip_catalog -rebuild
-    puts ">>> 已导入 HLS IP 仓库: $IP_REPO"
+    foreach _r $_repos { puts ">>> 已导入 IP 仓库: $_r" }
 } else {
-    puts ">>> 未提供 IP_REPO，跳过 gesture_preproc 的例化"
+    puts ">>> 未提供任何 IP_REPO，跳过 gesture_preproc 与 rgb2dvi 的例化"
 }
 
 # ---------------------------------------------------------------------
@@ -201,32 +221,199 @@ set_property -dict [list \
 
 # =====================================================================
 #  5. 视频时序控制器 + 生成器（给 HDMI 输出）
+#
+#  ⚠ 2026-09-26：VIDEO_MODE 由 480p 改为 **720p**（配合 rgb2dvi 的
+#    40 MHz 下限 —— 480p 的 25.2 MHz 低于它，需要改 rgb2dvi 源码）。
+#    v_tc 的 720p 预设 = **1280×720**（已从 IP 的 xgui Tcl 核实：
+#    GEN_HACTIVE_SIZE=1280 / GEN_VACTIVE_SIZE=720），计时 1650×750，
+#    对应像素时钟 74.25 MHz → 74.25e6/(1650×750) = **60.0 Hz** ✓
+#
+#  ⚠⚠ enable_generation 必须显式为 1：这个 IP 的默认值随版本变过，
+#     而且——本项目反复踩的那类坑——**它没开时不会报错**，
+#     只是 vtiming_out 永远不动，下游表现为黑屏。
+#     回读断言在下面。
+#
+#  ⚠ v_tc 有两个时钟：clk（视频时序，要在**像素时钟**域）与
+#    s_axi_aclk（AXI-Lite 控制，留在 100 MHz）。见 §9 的时钟连接。
 # =====================================================================
 set vtc [create_bd_cell -type ip -vlnv xilinx.com:ip:v_tc v_tc]
 
 set_property -dict [list \
-    CONFIG.enable_detection {0} \
-    CONFIG.VIDEO_MODE       {480p} \
+    CONFIG.enable_detection  {0} \
+    CONFIG.enable_generation {1} \
+    CONFIG.VIDEO_MODE        {720p} \
 ] $vtc
+
+# 回读断言：确认生成器开着、且 720p 预设真的解析成 1280×720
+set gen_en [get_property -quiet CONFIG.enable_generation $vtc]
+if {$gen_en eq "" || $gen_en == 0} {
+    error "v_tc 的 enable_generation 未生效（实得 '$gen_en'）—— 时序发生器不会动"
+}
+foreach {p want} {GEN_HACTIVE_SIZE 1280 GEN_VACTIVE_SIZE 720} {
+    set got [get_property -quiet CONFIG.$p $vtc]
+    if {$got eq "" || $got != $want} {
+        error "v_tc 的 $p 期望 $want，实得 '$got' —— 720p 预设没解析成 1280x720"
+    }
+    puts ">>> v_tc $p = $got ✓"
+}
+puts ">>> v_tc 720p 刷新率 = [expr {74.25e6 / (1650.0 * 750.0)}] Hz (预期 60.0)"
 
 # =====================================================================
 #  6. AXI4-Stream → 视频时序（驱动 HDMI）
 # =====================================================================
 set vout [create_bd_cell -type ip -vlnv xilinx.com:ip:v_axi4s_vid_out v_axi4s_vid_out]
-# ⚠ 这里的格式参数决定 s_axis_video_tdata 的位宽，必须与 VDMA 出来的
-#   16bit RGB565 对齐。实测（Vivado 2025.2，DATA_WIDTH=8）：
-#       FORMAT=0 -> 16bit   <- 用它（RGB565）
-#       FORMAT=1 -> 24bit
-#       FORMAT=2 -> 24bit
-#   默认值是 2（24bit），与 16bit 的 VDMA 直连会报
-#     [BD 41-2384] Width mismatch ... Only lower order bits will be connected
-#   颜色会整体错位 —— 这类"能连上但数据错"的警告不能忽略。
+# ⚠ 这里的格式参数决定 s_axis_video_tdata 的位宽，**也决定 vid_io_out 的位宽**。
+#   实测规则（Vivado 2025.2，读 IP 的 xgui Tcl 得出）：
+#       C_S_AXIS_TDATA_WIDTH = ceil(PPC × 分量数 × DATA_WIDTH / 8) × 8
+#       vid_io_out 宽度      = PPC × 分量数 × C_NATIVE_COMPONENT_WIDTH
+#   其中「分量数」由 FORMAT 决定：FORMAT=0→2 个，FORMAT=1/2→3 个。
+#
+#   ── 2026-09-26 改动：16bit RGB565 → 24bit RGB888 ──
+#   原来 FORMAT=0 → 2 分量 × 8 = 16bit，直接吃 VDMA 的 RGB565。
+#   现在要驱动 rgb2dvi（它只要 24bit，见 §6.4），所以：
+#       FORMAT=2 + DATA_WIDTH=8 → 3 × 8 = **24bit**
+#   上游 VDMA 仍是 16bit，中间由手写的 `axis_rgb565_888` 转换（§6.3）。
+#
+#   ⚠ 若这里算出来不是 24，与 rgb2dvi 连接时只报
+#     [BD 41-2384] Width mismatch ... Only lower order bits
+#   —— **WARNING 不是 ERROR**，会被截断后静默出错。下面的回读断言就是防它。
+#
+#   ⚠⚠ C_HAS_ASYNC_CLK 由 0 改为 1：s_axis 侧仍是 100 MHz（VDMA 侧），
+#     vid_io 侧切到 74.25 MHz 像素时钟。改完会多出两个端口：
+#         vid_io_out_clk    ← 必须接像素时钟，否则无输出
+#         vid_io_out_reset  ← ⚠ **低有效**！与 aresen 极性相反
 set_property -dict [list \
-    CONFIG.C_HAS_ASYNC_CLK           {0} \
+    CONFIG.C_HAS_ASYNC_CLK           {1} \
     CONFIG.C_ADDR_WIDTH              {11} \
-    CONFIG.C_S_AXIS_VIDEO_FORMAT     {0} \
+    CONFIG.C_S_AXIS_VIDEO_FORMAT     {2} \
     CONFIG.C_S_AXIS_VIDEO_DATA_WIDTH {8} \
 ] $vout
+
+# 回读断言：确认关键参数确实写进去了
+# ⚠ `C_S_AXIS_TDATA_WIDTH` / `C_NATIVE_DATA_WIDTH` 是 **MODELPARAM**
+#   （由 FORMAT × DATA_WIDTH 派生的只读值），用 `CONFIG.` 读不到 ——
+#   写这条断言时踩过：get_property 返回空字符串，断言误报。
+#   所以这里只断言**可写的输入参数**；派生出来的真实位宽在 BD 建完后
+#   从生成的 bd 文件里核实（见脚本末尾的提示）。
+foreach {p want} {C_S_AXIS_VIDEO_FORMAT 2 C_S_AXIS_VIDEO_DATA_WIDTH 8 \
+                  C_NATIVE_COMPONENT_WIDTH 8 C_HAS_ASYNC_CLK 1} {
+    set got [get_property -quiet CONFIG.$p $vout]
+    if {$got eq "" || $got != $want} {
+        error "v_axi4s_vid_out 的 $p 期望 $want，实得 '$got'"
+    }
+    puts ">>> v_axi4s_vid_out $p = $got ✓"
+}
+puts "    （FORMAT=2 × DATA_WIDTH=8 → s_axis 24bit；NATIVE_COMPONENT_WIDTH=8 → vid_io_out 24bit）"
+
+# =====================================================================
+#  6.2 像素时钟域：100 MHz → 74.25 MHz（720p60）
+#
+#  ⚠⚠ 这是本 BD 之前**完全没有**的东西。原设计里 v_tc 与 v_axi4s_vid_out
+#     都挂在 100 MHz 的 FCLK_CLK0 上 —— 那样算出来的刷新率是
+#     100e6 / (1650 × 750) = **80.8 Hz**，不是显示器认的 60 Hz。
+#     （v_tc 的 720p 预设按 1650×750 计时。）所以必须真有一个像素时钟。
+#
+#  参数推导（显式给 M/D/O，**不让工具自动选** —— 原因见 §7 的 XCLK 段）：
+#      VCO  = 100 MHz × M / D = 100 × 37.125 / 5 = **742.5 MHz** ✓
+#              （在 Zynq-7020 -1 的 600–1200 MHz 内，且离两端都远）
+#      PFD  = 100 / D = 20 MHz ✓（MMCM 要求 ≥10 MHz）
+#      像素 = VCO / O = 742.5 / 10 = **74.25 MHz** ✓（精确，误差 0.0000%）
+#
+#  ⚠ 74.25 MHz 是 CEA-861 对 720p60 的**精确**像素时钟。D=5 是为满足
+#    M 的 0.125 步进下的精确解 —— 已穷举验证：
+#    100×37.125/5 = 742.5，742.5/10 = 74.25，无舍入误差。
+# =====================================================================
+set cwpix [create_bd_cell -type ip -vlnv xilinx.com:ip:clk_wiz clk_wiz_pix]
+
+set_property -dict [list \
+    CONFIG.PRIM_IN_FREQ          {100.000} \
+    CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {74.250} \
+    CONFIG.USE_LOCKED            {true} \
+    CONFIG.USE_RESET             {true} \
+    CONFIG.RESET_TYPE            {ACTIVE_LOW} \
+    CONFIG.PRIMITIVE             {MMCM} \
+    CONFIG.OVERRIDE_MMCM         {true} \
+] $cwpix
+
+# 第二步：OVERRIDE_MMCM 已开，这时 MMCM_* 才真正可写
+set_property -dict [list \
+    CONFIG.MMCM_CLKFBOUT_MULT_F  {37.125} \
+    CONFIG.MMCM_DIVCLK_DIVIDE    {5} \
+    CONFIG.MMCM_CLKOUT0_DIVIDE_F {10.000} \
+] $cwpix
+
+# 回读断言（照抄 §7 XCLK 的做法 —— 参数没生效不报错，必须自己查）
+foreach {p want} {MMCM_CLKFBOUT_MULT_F 37.125 MMCM_DIVCLK_DIVIDE 5 \
+                  MMCM_CLKOUT0_DIVIDE_F 10.000} {
+    set got [get_property -quiet CONFIG.$p $cwpix]
+    if {$got eq "" || [expr {abs(double($got) - $want)}] > 0.001} {
+        error "像素时钟 MMCM 参数 $p 未生效：期望 $want，实得 '$got'"
+    }
+    puts ">>> 像素时钟 MMCM $p = $got ✓"
+}
+puts ">>> 像素时钟 VCO = [expr {100.0 * [get_property CONFIG.MMCM_CLKFBOUT_MULT_F $cwpix] / [get_property CONFIG.MMCM_DIVCLK_DIVIDE $cwpix]}] MHz (期望 742.5)"
+
+# =====================================================================
+#  6.3 位宽转换：VDMA 16bit RGB565 → 24bit RBG888
+#
+#  ⚠⚠ 输出是 **RBG** 序不是 RGB —— rgb2dvi 的 vid_pData 就是 RBG
+#     （[23:16]=R / [15:8]=B / [7:0]=G，见 rgb2dvi.vhd:181-184 的原文
+#     注释 "for some reason vid_data is packed in RBG order"）。
+#     而 v_axi4s_vid_out **不做重排**（TDATA_OUT = TDATA_IN），
+#     所以位序完全由这个模块决定。写成常识的 RGB 会**绿蓝互换**：
+#     画面看着像对的、只是颜色不对 —— 最难往位序上想的一类现象。
+#     详见 src/RTL/axis_rgb565_888.v 的文件头。
+# =====================================================================
+set conv [create_bd_cell -type module -reference axis_rgb565_888 rgb565_888_0]
+
+# =====================================================================
+#  6.4 TMDS 编码器（Digilent rgb2dvi）
+#
+#  PYNQ-Z2 的 HDMI **直连 PL 的 TMDS 引脚**，板上无 ADV7511 之类的
+#  编码芯片 → TMDS 必须自己在 PL 里做。rgb2dvi 就是干这个的。
+#
+#  ⚠⚠ kClkRange **必须显式设为 2** —— 它的默认值是 1，
+#     对应 CLKFBOUT_MULT_F = 5，即 VCO = 像素时钟 × 5。
+#     720p 下 = 74.25 × 5 = **371.25 MHz，低于 -1 速度等级的 600 MHz 下限
+#     → 锁不住 → 无输出**。设 2 后 VCO = 742.5 MHz ✓。
+#     依据：third_party/digilent/rgb2dvi_v1_2/src/ClockGen.vhd 的注释
+#           "MULT_F = kClkRange*5 (choose >=120MHz=1, >=60MHz=2, >=40MHz=3)"
+#
+#  ⚠ kGenerateSerialClk = true：让它**自己**产生 5× 串行时钟（371.25 MHz），
+#     不必我们在外面搭 MMCM+BUFIO/BUFR。代价是不能运行时切分辨率 ——
+#     本项目固定 720p，无所谓。
+#     （参考工程用 false 是因为它要支持动态切分辨率，走 axi_dynclk。）
+#
+#  ⚠ kRstActiveHigh = false → 用 `aRst_n`（低有效），接 peripheral_aresetn。
+#     设成 true 则用 `aRst`（高有效），端口都不一样，别接错。
+# =====================================================================
+set r2d [create_bd_cell -type ip -vlnv digilentinc.com:ip:rgb2dvi:1.2 rgb2dvi_0]
+set_property -dict [list \
+    CONFIG.kClkRange          {2} \
+    CONFIG.kGenerateSerialClk {true} \
+    CONFIG.kRstActiveHigh     {false} \
+] $r2d
+
+# 回读断言：kClkRange 是"默认值会静默锁不住"的那类参数，必须查
+set got_kr [get_property -quiet CONFIG.kClkRange $r2d]
+if {$got_kr eq "" || $got_kr != 2} {
+    error "rgb2dvi 的 kClkRange 期望 2，实得 '$got_kr' —— 默认值 1 会让 VCO 只有 371 MHz 锁不住"
+}
+puts ">>> rgb2dvi kClkRange = $got_kr ✓ (VCO 742.5 MHz)"
+
+# =====================================================================
+#  6.5 像素域复位
+#
+#  ⚠⚠ 关键：`dcm_locked` 必须接 MMCM 的 locked。
+#     若不管它（proc_sys_reset 默认把 dcm_locked 当 1），复位会
+#     在**像素时钟还没锁定**时就放开 → **静默黑屏**：
+#     构建干净通过、上板什么都不显示。
+#     接上 locked 后，IP 内部会一直保持复位直到时钟稳定。
+#
+#  ⚠ 不需要额外的 AND 门 —— `dcm_locked` 就是为这件事设计的端口。
+# =====================================================================
+set rstpix [create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset rst_pix]
+
 # =====================================================================
 #  7. 摄像头采集（本项目写的 RTL）
 # =====================================================================
@@ -238,8 +425,22 @@ set_property -dict [list \
 #    dvp_capture 已存在（上一轮加过），新增的 iobuf_wrap.v /
 #    ov5640_regs.v 就**永远加不进来**，报
 #      [BD 41-1690] Unable to resolve module-source
-set _rtl [file normalize [file join [file dirname [info script]] ../rtl]]
-foreach _f {dvp_capture.v async_fifo.v sccb_master.v iobuf_wrap.v ov5640_regs.v} {
+#  ⚠ 目录重排（2026-09-26）后 RTL 在 <repo>/src/RTL/。
+#    原来这里写的是 `../rtl`（= build/rtl，**已不存在**）——
+#    只在"create_project.tcl 已先把文件加进工程"时靠守卫侥幸不炸，
+#    一旦两个文件清单不同步就会静默失效。改成与 create_project.tcl
+#    一致的双候选查找。
+set _repo [file normalize [file join [file dirname [info script]] .. ..]]
+set _rtl ""
+foreach _cand [list "$_repo/src/RTL" "$_repo/rtl"] {
+    if {[file isdirectory $_cand]} { set _rtl $_cand; break }
+}
+if {$_rtl eq ""} {
+    error "找不到 RTL 目录（试过 src/RTL/ 与 rtl/）"
+}
+puts ">>> RTL 目录: $_rtl"
+
+foreach _f {dvp_capture.v async_fifo.v sccb_master.v iobuf_wrap.v ov5640_regs.v axis_rgb565_888.v} {
     # ⚠ 不用 continue —— Vivado 的 Tcl 解释器在部分上下文里对
     #    foreach 内的 continue 报 "wrong # args: should be continue"。
     #    改用嵌套 if 表达同样的"已存在就跳过"。
@@ -564,13 +765,28 @@ connect_bd_intf_net [get_bd_intf_pins dvp_capture_0/m_axis]   [get_bd_intf_pins 
 connect_bd_intf_net [get_bd_intf_pins vdma/M_AXI_S2MM]        [get_bd_intf_pins ic_hp1/S00_AXI]
 connect_bd_intf_net [get_bd_intf_pins ic_hp1/M00_AXI]         [get_bd_intf_pins ps7/S_AXI_HP1]
 
-# ---- 数据通路：MM2S → HDMI ----
-connect_bd_intf_net [get_bd_intf_pins vdma/M_AXIS_MM2S]       [get_bd_intf_pins v_axi4s_vid_out/video_in]
+# ---- 数据通路：MM2S → (位宽转换) → v_axi4s_vid_out → rgb2dvi → TMDS ----
+#
+#  ⚠ 2026-09-26：中间插了 `rgb565_888_0` —— VDMA 出 16bit RGB565，
+#    而 v_axi4s_vid_out 现在配成 24bit（见 §6），两者对不上。
+#    转换模块同时负责**位序**（输出 RBG 而非 RGB，见 §6.3 的说明）。
+connect_bd_intf_net [get_bd_intf_pins vdma/M_AXIS_MM2S]       [get_bd_intf_pins rgb565_888_0/s_axis]
+connect_bd_intf_net [get_bd_intf_pins rgb565_888_0/m_axis]    [get_bd_intf_pins v_axi4s_vid_out/video_in]
 connect_bd_intf_net [get_bd_intf_pins vdma/M_AXI_MM2S]        [get_bd_intf_pins ic_hp2/S00_AXI]
 connect_bd_intf_net [get_bd_intf_pins ic_hp2/M00_AXI]         [get_bd_intf_pins ps7/S_AXI_HP2]
 
 # ---- VTC → v_axi4s_vid_out ----
 connect_bd_intf_net [get_bd_intf_pins v_tc/vtiming_out] [get_bd_intf_pins v_axi4s_vid_out/vtiming_in]
+
+# ---- sof_state 回环（帧起始同步辅助）----
+#
+#  ⚠ 计划阶段标注过：这两个端口存在，但"必须连"这条**没有从 IP 文档确证**
+#    （v_tc 的 HDL 是加密的，读不到内部逻辑）。
+#    接上的代价是**零**（一根线），不接的后果未知 —— 属廉价保险。
+connect_bd_net [get_bd_pins v_axi4s_vid_out/sof_state_out] [get_bd_pins v_tc/sof_state]
+
+# ---- v_axi4s_vid_out → rgb2dvi（都是 24bit RGB，像素时钟域）----
+connect_bd_intf_net [get_bd_intf_pins v_axi4s_vid_out/vid_io_out] [get_bd_intf_pins rgb2dvi_0/RGB]
 
 # ---- 时钟 ----
 #
@@ -580,7 +796,12 @@ connect_bd_intf_net [get_bd_intf_pins v_tc/vtiming_out] [get_bd_intf_pins v_axi4
 #    这是一个很容易漏的点：ACLK 看起来已经连了，validate 仍然报错。
 #
 #  ⚠ v_tc 有两个时钟域：clk（视频时序）与 s_axi_aclk（AXI-Lite）。
-#    只连 clk 会让 AXI 侧无时钟。两者都连到同一个 100 MHz 即可。
+#    **2026-09-26 改动**：`v_tc/clk` **移出本表** —— 它必须挂在
+#    74.25 MHz 像素时钟上，否则刷新率不对（见下方"像素时钟域"段）。
+#    `v_tc/s_axi_aclk` 留在 100 MHz。
+#
+#  ⚠ `v_axi4s_vid_out/aclk` 也留在这里（s_axis 侧仍是 100 MHz），
+#    但它新多出来的 `vid_io_out_clk` 在像素时钟那段单独接。
 #
 #  ⚠ PS 侧的 M_AXI_GP0_ACLK / S_AXI_HP*_ACLK 也必须显式连 ——
 #    PS 的这些引脚不会自动跟随 FCLK_CLK0。
@@ -606,13 +827,15 @@ set clk_pins {
     vdma/s_axis_s2mm_aclk
     vdma/m_axis_mm2s_aclk
 
-    v_tc/clk
     v_tc/s_axi_aclk
     v_axi4s_vid_out/aclk
     dvp_capture_0/aclk
 
     clk_wiz_xclk/clk_in1
+    clk_wiz_pix/clk_in1
     sccb_0/clk
+
+    rgb565_888_0/aclk
 }
 
 # 预处理链的时钟引脚（只在 IP 存在时才连着，但引脚列表可以无条件拼）
@@ -714,7 +937,94 @@ foreach pin $rst_pins {
 if {[llength $rst_bad] > 0} {
     error "以下复位引脚仍未连接: $rst_bad"
 }
-connect_bd_net [get_bd_pins rst_100m/peripheral_aresetn] [get_bd_pins v_tc/resetn]
+# =====================================================================
+#  像素时钟域（74.25 MHz）—— 2026-09-26 新增
+#
+#  ⚠ 这里**不能**复用上面那个 `$CLK` 循环 —— 它是单个标量（FCLK_CLK0），
+#    而本段是**另一个时钟域**。所以单独接。
+# =====================================================================
+
+# ---- 像素时钟树 ----
+#  ⚠ `rst_pix/slowest_sync_clk` 也在这里接 —— 它是**像素域的复位**，
+#    同步时钟必须是像素时钟本身。接到 100 MHz 侧会产生
+#    "100 MHz 域驱动 74.25 MHz 域输入"的**真实跨时钟域违例**
+#    （实测 WNS −4.436 ns，两个时钟相位无关）。
+set PIXCLK [get_bd_pins clk_wiz_pix/clk_out1]
+
+set pix_clk_pins {
+    v_tc/clk
+    v_axi4s_vid_out/vid_io_out_clk
+    rgb2dvi_0/PixelClk
+    rst_pix/slowest_sync_clk
+}
+foreach pin $pix_clk_pins {
+    connect_bd_net $PIXCLK [get_bd_pins $pin]
+}
+puts ">>> 像素时钟已连接 [llength $pix_clk_pins] 个引脚"
+
+# ---- 像素域复位 ----
+#
+#  ⚠ `ext_reset_in` 用 **FCLK_RESET0_N（原始异步源）**，与 rst_100m 同源。
+#    不要用 rst_100m/peripheral_aresetn —— 那是 100 MHz 域的信号，
+#    proc_sys_reset 会把它同步到**它自己的** slowest_sync_clk（像素时钟），
+#    本身没问题，但同源更简单、且与全设计其余部分一致。
+#
+#  ⚠ `dcm_locked` 接像素 MMCM 的 locked —— **这一条是关键**：
+#    不接的话复位会在时钟锁定前放开 → 静默黑屏。
+#
+#  ⚠ `vid_io_out_reset` 是**高有效**（见 v_axi4s_vid_out 源码：
+#     `vid_reset = (C_HAS_ASYNC_CLK) ? vid_io_out_reset : ~aresetn`），
+#     而 `peripheral_reset` 正是高有效输出 → 用它。
+#     **不要**用 peripheral_aresetn（低有效），极性正好反。
+connect_bd_net [get_bd_pins ps7/FCLK_RESET0_N]           [get_bd_pins rst_pix/ext_reset_in]
+connect_bd_net [get_bd_pins clk_wiz_pix/locked]          [get_bd_pins rst_pix/dcm_locked]
+
+connect_bd_net [get_bd_pins rst_pix/peripheral_aresetn]  [get_bd_pins v_tc/resetn]
+connect_bd_net [get_bd_pins rst_pix/peripheral_aresetn]  [get_bd_pins rgb2dvi_0/aRst_n]
+connect_bd_net [get_bd_pins rst_pix/peripheral_reset]    [get_bd_pins v_axi4s_vid_out/vid_io_out_reset]
+
+# ⚠ 极性断言：`vid_io_out_reset` 必须接**高有效**的 peripheral_reset。
+#   接错成低有效的 peripheral_aresetn 会让视频通路**永远不复位/一直复位**，
+#   且构建一路干净通过。
+if {[llength [get_bd_nets -quiet -of_objects [get_bd_pins rst_pix/peripheral_reset]]] == 0} {
+    error "rst_pix/peripheral_reset 未连接 —— vid_io_out_reset 需要高有效复位"
+}
+puts ">>> 像素域复位已连接（ext_reset = FCLK_RESET0_N，dcm_locked = 像素 MMCM locked）"
+
+# 逐个断言：这两条特别容易漏，漏了就是静默黑屏
+foreach pin {v_tc/clk v_axi4s_vid_out/vid_io_out_clk rgb2dvi_0/PixelClk} {
+    if {[llength [get_bd_nets -quiet -of_objects [get_bd_pins $pin]]] == 0} {
+        error "像素时钟引脚 $pin 未连接 —— 下游不会工作（且不报错）"
+    }
+}
+foreach pin {v_tc/resetn rgb2dvi_0/aRst_n v_axi4s_vid_out/vid_io_out_reset} {
+    if {[llength [get_bd_nets -quiet -of_objects [get_bd_pins $pin]]] == 0} {
+        error "像素域复位引脚 $pin 未连接 —— 会一直卡在复位或不复位"
+    }
+}
+puts ">>> 像素时钟域自检通过"
+
+# =====================================================================
+#  ⚠⚠ 时钟使能必须显式拉高 —— 这是本次最危险的一类静默失败
+#
+#  BD 对**悬空的输入引脚**默认 **tie-off 到 0**（只给
+#  [BD 41-759] WARNING）。这些 ce/clken 一旦是 0：
+#      v_tc 不再产生任何时序、v_axi4s_vid_out 的数据永不推进
+#  → **画面完全不动，但构建一路干净通过**，最难查。
+# =====================================================================
+set one_src [create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant const_one]
+set_property -dict [list CONFIG.CONST_WIDTH {1} CONFIG.CONST_VAL {1}] $one_src
+
+foreach pin {v_tc/clken v_tc/gen_clken \
+             v_axi4s_vid_out/aclken v_axi4s_vid_out/vid_io_out_ce} {
+    if {[llength [get_bd_pins -quiet $pin]] == 0} {
+        error "时钟使能引脚不存在（端口名可能变了）：$pin"
+    }
+    connect_bd_net [get_bd_pins const_one/dout] [get_bd_pins $pin]
+}
+puts ">>> 已拉高 4 个时钟使能（v_tc/clken, v_tc/gen_clken, aclken, vid_io_out_ce）"
+
+
 connect_bd_net [get_bd_pins rst_100m/peripheral_aresetn] [get_bd_pins v_axi4s_vid_out/aresetn]
 connect_bd_net [get_bd_pins rst_100m/peripheral_aresetn] [get_bd_pins vdma/axi_resetn]
 connect_bd_net [get_bd_pins rst_100m/peripheral_aresetn] [get_bd_pins dvp_capture_0/rst_n]
@@ -798,33 +1108,31 @@ connect_bd_net [get_bd_pins iobuf_sda_0/io_pad] [get_bd_ports io_sda]
 #      [BD 5-232] No interface pins matched
 #    因为它确实是接口而不是引脚。
 #
-#  ⚠ TMDS 编码（vid_io_out → HDMI 物理引脚）**本 BD 不做**，故意分步：
-#    TMDS 是独立的编码问题（8b/10b + 差分对），把它塞进这个 BD 会让
-#    "数据通路是否通"和"HDMI 能不能显示"两个问题纠缠在一起。
-#    先把 vid_io_out 引成外部接口，下一步单独接 TMDS 编码器模块。
-# ⚠ 用 make_bd_intf_pins_external 而不是 create_bd_intf_port -vlnv。
-#   手写 VLNV 'xilinx.com:interface:vid_io:1.0' 会报
-#     [BD 41-52] Could not find the abstraction definition
-#   因为该 VLNV 在当前 IP 目录里查不到（不同版本命名有差异）。
-#   make_bd_intf_pins_external 直接从一个已有接口引脚导出，
-#   VLNV 由工具自己取，不会写错。
-make_bd_intf_pins_external [get_bd_intf_pins v_axi4s_vid_out/vid_io_out]
+#  ⚠ 2026-09-26：TMDS 编码**已经接上了**（§6.4 的 rgb2dvi_0）。
+#    原来这里是把 `v_axi4s_vid_out/vid_io_out` 直接引成外部端口
+#    `hdmi_vid_out`（22 根并行信号悬空，靠 DRC 豁免才生成的比特流）。
+#    现在 vid_io_out 已经在 BD 内部连给了 rgb2dvi，**不能再导出** ——
+#    那会变成"一个引脚两个驱动"。
+#
+#    改成导出 rgb2dvi 的 **TMDS 接口**（真正的差分对）。
+#
+#  ⚠ 用 make_bd_intf_pins_external 而不是 create_bd_intf_port -vlnv。
+#   手写 VLNV 会报 [BD 41-52] Could not find the abstraction definition
+#   （不同版本命名有差异）。make_bd_intf_pins_external 从一个已有接口
+#   引脚导出，VLNV 由工具自己取，不会写错。
+#
+#  ⚠⚠ 用 `-name` **直接命名**，不要再用原来那套"遍历已有端口、
+#     排除 cam_pclk、剩下的就是要的"的写法 —— 那段是**脆弱的**：
+#     一旦 BD 里出现第二个 intf 端口，它会取到**最后一个**并把
+#     错误的端口改名。这里显式指定名字，行为确定。
+make_bd_intf_pins_external -name hdmi_tmds [get_bd_intf_pins rgb2dvi_0/TMDS]
 
-# 重命名成有意义的端口名。
-# ⚠ 不要硬猜 make_bd_intf_pins_external 生成的端口名 —— 它可能是
-#   vid_io_out，也可能被加后缀。用"排除已有端口"的方式取到它。
-set _newport {}
-foreach _p [get_bd_intf_ports -quiet] {
-    if {[get_property NAME $_p] ne "cam_pclk"} {
-        set _newport $_p
-    }
+set _tmds_port [get_bd_intf_ports -quiet hdmi_tmds]
+if {[llength $_tmds_port] == 0} {
+    error "TMDS 接口导出失败 —— 找不到端口 hdmi_tmds"
 }
-if {[llength $_newport] > 0} {
-    set_property name hdmi_vid_out $_newport
-    puts ">>> HDMI 视频接口已导出为外部端口 hdmi_vid_out"
-} else {
-    puts "WARN: 未找到 make_bd_intf_pins_external 生成的端口"
-}
+puts ">>> TMDS 已导出为外部接口: hdmi_tmds"
+puts "    ⚠ 引脚约束见 constraints/video_io.xdc 第四层（TMDS_33 差分对）"
 
 # =====================================================================
 #  11. 地址分配
@@ -842,9 +1150,15 @@ validate_bd_design
 
 # 检查是否存在悬空的 AXI 接口
 #
-# ⚠ 只检查 AXI 类接口。外部视频接口（hdmi_vid_out）**本来就只有 1 个端点**
-#   —— 它是从内部引脚导出的对外端口，另一端在 BD 外面。
+# ⚠ 只检查 AXI 类接口。**从内部引脚导出的对外接口本来就只有 1 个端点**
+#   —— 另一端在 BD 外面，是合法的。
 #   早期版本没做这个区分，把合法的外部端口误报成"悬空接口"。
+#
+# ⚠ 2026-09-26：跳过条件原来只匹配 `*vid_io*`，但 TMDS 接口的 VLNV 是
+#   `digilentinc.com:interface:tmds:1.0` —— **不含 "vid_io"**。
+#   接上 rgb2dvi 之后，导出的 `hdmi_tmds` 会命中这条而误报。
+#   所以把判断放宽成"结尾是 _rtl 的抽象类型"这一族（vid_io_rtl /
+#   tmds_rtl / clock_rtl ...），它们都是接口抽象，不是真悬空。
 set dangling 0
 foreach intf [get_bd_intf_nets -quiet] {
     set pins [get_bd_intf_pins -quiet -of_objects $intf]
@@ -854,7 +1168,9 @@ foreach intf [get_bd_intf_nets -quiet] {
         foreach p $pins {
             set vlnv ""
             catch {set vlnv [get_property VLNV [get_property TYPE $p]]}
-            if {[string match "*vid_io*" $vlnv]} { set skip 1 }
+            if {[string match "*vid_io*" $vlnv] || [string match "*tmds*" $vlnv]} {
+                set skip 1
+            }
         }
         if {$skip} { continue }
         puts "WARN: 悬空接口网 $intf 只连了 [llength $pins] 个端点 (非 AXI，忽略)"

@@ -4,10 +4,10 @@
 <!-- Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.                   -->
 <!-- Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.   -->
 
-<Project Product="Vivado" Version="7" Minor="71" Path="E:/complete_project_source/vivado/gesture_system/gesture_system.xpr">
+<Project Product="Vivado" Version="7" Minor="71" Path="E:/gesture_pl/build/vivado/gesture_system/gesture_system.xpr">
   <DefaultLaunch Dir="$PRUNDIR"/>
   <Configuration>
-    <Option Name="Id" Val="774e61ff94df410ab2684427d5467240"/>
+    <Option Name="Id" Val="db6b795a38bf45199b9f79b2050458b1"/>
     <Option Name="Part" Val="xc7z020clg400-1"/>
     <Option Name="CompiledLibDir" Val="$PCACHEDIR/compile_simlib"/>
     <Option Name="CompiledLibDirXSim" Val=""/>
@@ -47,7 +47,8 @@
     <Option Name="ActiveSimSet" Val="sim_1"/>
     <Option Name="DefaultLib" Val="xil_defaultlib"/>
     <Option Name="ProjectType" Val="Default"/>
-    <Option Name="IPRepoPath" Val="$PPRDIR/../../gesture_comp/solution1/impl/ip"/>
+    <Option Name="IPRepoPath" Val="$PPRDIR/../../../gesture_comp/solution1/impl/ip"/>
+    <Option Name="IPRepoPath" Val="$PPRDIR/../../../third_party/digilent"/>
     <Option Name="IPOutputRepo" Val="$PCACHEDIR/ip"/>
     <Option Name="IPDefaultOutputPath" Val="$PGENDIR/sources_1"/>
     <Option Name="IPCachePermission" Val="read"/>
@@ -98,35 +99,42 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../rtl/async_fifo.v">
+      <File Path="$PPRDIR/../../../src/RTL/axis_rgb565_888.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../rtl/dvp_capture.v">
+      <File Path="$PPRDIR/../../../src/RTL/async_fifo.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../rtl/sccb_master.v">
+      <File Path="$PPRDIR/../../../src/RTL/dvp_capture.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../rtl/ov5640_regs.v">
+      <File Path="$PPRDIR/../../../src/RTL/sccb_master.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../rtl/iobuf_wrap.v">
+      <File Path="$PPRDIR/../../../src/RTL/ov5640_regs.v">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../../../src/RTL/iobuf_wrap.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
@@ -139,6 +147,9 @@
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
+        <CompFileExtendedInfo CompFileName="bd_video.bd" FileRelPathName="ip\bd_video_clk_wiz_pix_0\bd_video_clk_wiz_pix_0.xci">
+          <Proxy FileSetName="bd_video_clk_wiz_pix_0"/>
+        </CompFileExtendedInfo>
         <CompFileExtendedInfo CompFileName="bd_video.bd" FileRelPathName="ip\bd_video_clk_wiz_xclk_0\bd_video_clk_wiz_xclk_0.xci">
           <Proxy FileSetName="bd_video_clk_wiz_xclk_0"/>
         </CompFileExtendedInfo>
@@ -190,8 +201,17 @@
         <CompFileExtendedInfo CompFileName="bd_video.bd" FileRelPathName="ip\bd_video_ps7_0\bd_video_ps7_0.xci">
           <Proxy FileSetName="bd_video_ps7_0"/>
         </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="bd_video.bd" FileRelPathName="ip\bd_video_rgb2dvi_0_0\bd_video_rgb2dvi_0_0.xci">
+          <Proxy FileSetName="bd_video_rgb2dvi_0_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="bd_video.bd" FileRelPathName="ip\bd_video_rgb565_888_0_0\bd_video_rgb565_888_0_0.xci">
+          <Proxy FileSetName="bd_video_rgb565_888_0_0"/>
+        </CompFileExtendedInfo>
         <CompFileExtendedInfo CompFileName="bd_video.bd" FileRelPathName="ip\bd_video_rst_100m_0\bd_video_rst_100m_0.xci">
           <Proxy FileSetName="bd_video_rst_100m_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="bd_video.bd" FileRelPathName="ip\bd_video_rst_pix_0\bd_video_rst_pix_0.xci">
+          <Proxy FileSetName="bd_video_rst_pix_0"/>
         </CompFileExtendedInfo>
         <CompFileExtendedInfo CompFileName="bd_video.bd" FileRelPathName="ip\bd_video_sccb_0_0\bd_video_sccb_0_0.xci">
           <Proxy FileSetName="bd_video_sccb_0_0"/>
@@ -209,7 +229,7 @@
       <File Path="$PSRCDIR/sources_1/imports/hdl/bd_video_wrapper.v">
         <FileInfo>
           <Attr Name="ImportPath" Val="$PGENDIR/sources_1/bd/bd_video/hdl/bd_video_wrapper.v"/>
-          <Attr Name="ImportTime" Val="1790339998"/>
+          <Attr Name="ImportTime" Val="1790410724"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
@@ -223,12 +243,6 @@
     <FileSet Name="constrs_1" Type="Constrs" RelSrcDir="$PSRCDIR/constrs_1" RelGenDir="$PGENDIR/constrs_1">
       <Filter Type="Constrs"/>
       <File Path="$PPRDIR/../constraints/video_io.xdc">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../constraints/video_io_hdmi_tmp.xdc">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
@@ -270,9 +284,27 @@
         <Option Name="TopAutoSet" Val="TRUE"/>
       </Config>
     </FileSet>
+    <FileSet Name="bd_video_rgb2dvi_0_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/bd_video_rgb2dvi_0_0" RelGenDir="$PGENDIR/bd_video_rgb2dvi_0_0">
+      <Config>
+        <Option Name="TopModule" Val="bd_video_rgb2dvi_0_0"/>
+        <Option Name="UseBlackboxStub" Val="1"/>
+      </Config>
+    </FileSet>
+    <FileSet Name="bd_video_dvp_capture_0_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/bd_video_dvp_capture_0_0" RelGenDir="$PGENDIR/bd_video_dvp_capture_0_0">
+      <Config>
+        <Option Name="TopModule" Val="bd_video_dvp_capture_0_0"/>
+        <Option Name="UseBlackboxStub" Val="1"/>
+      </Config>
+    </FileSet>
     <FileSet Name="bd_video_rst_100m_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/bd_video_rst_100m_0" RelGenDir="$PGENDIR/bd_video_rst_100m_0">
       <Config>
         <Option Name="TopModule" Val="bd_video_rst_100m_0"/>
+        <Option Name="UseBlackboxStub" Val="1"/>
+      </Config>
+    </FileSet>
+    <FileSet Name="bd_video_rgb565_888_0_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/bd_video_rgb565_888_0_0" RelGenDir="$PGENDIR/bd_video_rgb565_888_0_0">
+      <Config>
+        <Option Name="TopModule" Val="bd_video_rgb565_888_0_0"/>
         <Option Name="UseBlackboxStub" Val="1"/>
       </Config>
     </FileSet>
@@ -282,33 +314,21 @@
         <Option Name="UseBlackboxStub" Val="1"/>
       </Config>
     </FileSet>
-    <FileSet Name="bd_video_v_tc_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/bd_video_v_tc_0" RelGenDir="$PGENDIR/bd_video_v_tc_0">
-      <Config>
-        <Option Name="TopModule" Val="bd_video_v_tc_0"/>
-        <Option Name="UseBlackboxStub" Val="1"/>
-      </Config>
-    </FileSet>
     <FileSet Name="bd_video_ps7_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/bd_video_ps7_0" RelGenDir="$PGENDIR/bd_video_ps7_0">
       <Config>
         <Option Name="TopModule" Val="bd_video_ps7_0"/>
         <Option Name="UseBlackboxStub" Val="1"/>
       </Config>
     </FileSet>
-    <FileSet Name="bd_video_ic_ctrl_imp_auto_pc_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/bd_video_ic_ctrl_imp_auto_pc_0" RelGenDir="$PGENDIR/bd_video_ic_ctrl_imp_auto_pc_0">
+    <FileSet Name="bd_video_v_tc_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/bd_video_v_tc_0" RelGenDir="$PGENDIR/bd_video_v_tc_0">
       <Config>
-        <Option Name="TopModule" Val="bd_video_ic_ctrl_imp_auto_pc_0"/>
+        <Option Name="TopModule" Val="bd_video_v_tc_0"/>
         <Option Name="UseBlackboxStub" Val="1"/>
       </Config>
     </FileSet>
-    <FileSet Name="bd_video_iobuf_sda_0_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/bd_video_iobuf_sda_0_0" RelGenDir="$PGENDIR/bd_video_iobuf_sda_0_0">
+    <FileSet Name="bd_video_v_axi4s_vid_out_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/bd_video_v_axi4s_vid_out_0" RelGenDir="$PGENDIR/bd_video_v_axi4s_vid_out_0">
       <Config>
-        <Option Name="TopModule" Val="bd_video_iobuf_sda_0_0"/>
-        <Option Name="UseBlackboxStub" Val="1"/>
-      </Config>
-    </FileSet>
-    <FileSet Name="bd_video_dvp_capture_0_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/bd_video_dvp_capture_0_0" RelGenDir="$PGENDIR/bd_video_dvp_capture_0_0">
-      <Config>
-        <Option Name="TopModule" Val="bd_video_dvp_capture_0_0"/>
+        <Option Name="TopModule" Val="bd_video_v_axi4s_vid_out_0"/>
         <Option Name="UseBlackboxStub" Val="1"/>
       </Config>
     </FileSet>
@@ -324,57 +344,9 @@
         <Option Name="UseBlackboxStub" Val="1"/>
       </Config>
     </FileSet>
-    <FileSet Name="bd_video_ic_ctrl_imp_xbar_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/bd_video_ic_ctrl_imp_xbar_0" RelGenDir="$PGENDIR/bd_video_ic_ctrl_imp_xbar_0">
+    <FileSet Name="bd_video_ic_hp3_imp_auto_pc_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/bd_video_ic_hp3_imp_auto_pc_0" RelGenDir="$PGENDIR/bd_video_ic_hp3_imp_auto_pc_0">
       <Config>
-        <Option Name="TopModule" Val="bd_video_ic_ctrl_imp_xbar_0"/>
-        <Option Name="UseBlackboxStub" Val="1"/>
-      </Config>
-    </FileSet>
-    <FileSet Name="bd_video_dma_out_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/bd_video_dma_out_0" RelGenDir="$PGENDIR/bd_video_dma_out_0">
-      <Config>
-        <Option Name="TopModule" Val="bd_video_dma_out_0"/>
-        <Option Name="UseBlackboxStub" Val="1"/>
-      </Config>
-    </FileSet>
-    <FileSet Name="bd_video_ic_hp2_imp_auto_pc_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/bd_video_ic_hp2_imp_auto_pc_0" RelGenDir="$PGENDIR/bd_video_ic_hp2_imp_auto_pc_0">
-      <Config>
-        <Option Name="TopModule" Val="bd_video_ic_hp2_imp_auto_pc_0"/>
-        <Option Name="UseBlackboxStub" Val="1"/>
-      </Config>
-    </FileSet>
-    <FileSet Name="bd_video_v_axi4s_vid_out_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/bd_video_v_axi4s_vid_out_0" RelGenDir="$PGENDIR/bd_video_v_axi4s_vid_out_0">
-      <Config>
-        <Option Name="TopModule" Val="bd_video_v_axi4s_vid_out_0"/>
-        <Option Name="UseBlackboxStub" Val="1"/>
-      </Config>
-    </FileSet>
-    <FileSet Name="bd_video_ov5640_regs_0_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/bd_video_ov5640_regs_0_0" RelGenDir="$PGENDIR/bd_video_ov5640_regs_0_0">
-      <Config>
-        <Option Name="TopModule" Val="bd_video_ov5640_regs_0_0"/>
-        <Option Name="UseBlackboxStub" Val="1"/>
-      </Config>
-    </FileSet>
-    <FileSet Name="bd_video_ic_hp1_imp_auto_pc_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/bd_video_ic_hp1_imp_auto_pc_0" RelGenDir="$PGENDIR/bd_video_ic_hp1_imp_auto_pc_0">
-      <Config>
-        <Option Name="TopModule" Val="bd_video_ic_hp1_imp_auto_pc_0"/>
-        <Option Name="UseBlackboxStub" Val="1"/>
-      </Config>
-    </FileSet>
-    <FileSet Name="bd_video_gesture_preproc_0_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/bd_video_gesture_preproc_0_0" RelGenDir="$PGENDIR/bd_video_gesture_preproc_0_0">
-      <Config>
-        <Option Name="TopModule" Val="bd_video_gesture_preproc_0_0"/>
-        <Option Name="UseBlackboxStub" Val="1"/>
-      </Config>
-    </FileSet>
-    <FileSet Name="bd_video_dma_in_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/bd_video_dma_in_0" RelGenDir="$PGENDIR/bd_video_dma_in_0">
-      <Config>
-        <Option Name="TopModule" Val="bd_video_dma_in_0"/>
-        <Option Name="UseBlackboxStub" Val="1"/>
-      </Config>
-    </FileSet>
-    <FileSet Name="bd_video_ic_hp3_imp_xbar_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/bd_video_ic_hp3_imp_xbar_0" RelGenDir="$PGENDIR/bd_video_ic_hp3_imp_xbar_0">
-      <Config>
-        <Option Name="TopModule" Val="bd_video_ic_hp3_imp_xbar_0"/>
+        <Option Name="TopModule" Val="bd_video_ic_hp3_imp_auto_pc_0"/>
         <Option Name="UseBlackboxStub" Val="1"/>
       </Config>
     </FileSet>
@@ -384,9 +356,75 @@
         <Option Name="UseBlackboxStub" Val="1"/>
       </Config>
     </FileSet>
-    <FileSet Name="bd_video_ic_hp3_imp_auto_pc_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/bd_video_ic_hp3_imp_auto_pc_0" RelGenDir="$PGENDIR/bd_video_ic_hp3_imp_auto_pc_0">
+    <FileSet Name="bd_video_gesture_preproc_0_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/bd_video_gesture_preproc_0_0" RelGenDir="$PGENDIR/bd_video_gesture_preproc_0_0">
       <Config>
-        <Option Name="TopModule" Val="bd_video_ic_hp3_imp_auto_pc_0"/>
+        <Option Name="TopModule" Val="bd_video_gesture_preproc_0_0"/>
+        <Option Name="UseBlackboxStub" Val="1"/>
+      </Config>
+    </FileSet>
+    <FileSet Name="bd_video_rst_pix_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/bd_video_rst_pix_0" RelGenDir="$PGENDIR/bd_video_rst_pix_0">
+      <Config>
+        <Option Name="TopModule" Val="bd_video_rst_pix_0"/>
+        <Option Name="UseBlackboxStub" Val="1"/>
+      </Config>
+    </FileSet>
+    <FileSet Name="bd_video_ov5640_regs_0_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/bd_video_ov5640_regs_0_0" RelGenDir="$PGENDIR/bd_video_ov5640_regs_0_0">
+      <Config>
+        <Option Name="TopModule" Val="bd_video_ov5640_regs_0_0"/>
+        <Option Name="UseBlackboxStub" Val="1"/>
+      </Config>
+    </FileSet>
+    <FileSet Name="bd_video_clk_wiz_pix_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/bd_video_clk_wiz_pix_0" RelGenDir="$PGENDIR/bd_video_clk_wiz_pix_0">
+      <Config>
+        <Option Name="TopModule" Val="bd_video_clk_wiz_pix_0"/>
+        <Option Name="UseBlackboxStub" Val="1"/>
+      </Config>
+    </FileSet>
+    <FileSet Name="bd_video_iobuf_sda_0_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/bd_video_iobuf_sda_0_0" RelGenDir="$PGENDIR/bd_video_iobuf_sda_0_0">
+      <Config>
+        <Option Name="TopModule" Val="bd_video_iobuf_sda_0_0"/>
+        <Option Name="UseBlackboxStub" Val="1"/>
+      </Config>
+    </FileSet>
+    <FileSet Name="bd_video_dma_in_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/bd_video_dma_in_0" RelGenDir="$PGENDIR/bd_video_dma_in_0">
+      <Config>
+        <Option Name="TopModule" Val="bd_video_dma_in_0"/>
+        <Option Name="UseBlackboxStub" Val="1"/>
+      </Config>
+    </FileSet>
+    <FileSet Name="bd_video_ic_ctrl_imp_xbar_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/bd_video_ic_ctrl_imp_xbar_0" RelGenDir="$PGENDIR/bd_video_ic_ctrl_imp_xbar_0">
+      <Config>
+        <Option Name="TopModule" Val="bd_video_ic_ctrl_imp_xbar_0"/>
+        <Option Name="UseBlackboxStub" Val="1"/>
+      </Config>
+    </FileSet>
+    <FileSet Name="bd_video_ic_ctrl_imp_auto_pc_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/bd_video_ic_ctrl_imp_auto_pc_0" RelGenDir="$PGENDIR/bd_video_ic_ctrl_imp_auto_pc_0">
+      <Config>
+        <Option Name="TopModule" Val="bd_video_ic_ctrl_imp_auto_pc_0"/>
+        <Option Name="UseBlackboxStub" Val="1"/>
+      </Config>
+    </FileSet>
+    <FileSet Name="bd_video_ic_hp1_imp_auto_pc_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/bd_video_ic_hp1_imp_auto_pc_0" RelGenDir="$PGENDIR/bd_video_ic_hp1_imp_auto_pc_0">
+      <Config>
+        <Option Name="TopModule" Val="bd_video_ic_hp1_imp_auto_pc_0"/>
+        <Option Name="UseBlackboxStub" Val="1"/>
+      </Config>
+    </FileSet>
+    <FileSet Name="bd_video_dma_out_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/bd_video_dma_out_0" RelGenDir="$PGENDIR/bd_video_dma_out_0">
+      <Config>
+        <Option Name="TopModule" Val="bd_video_dma_out_0"/>
+        <Option Name="UseBlackboxStub" Val="1"/>
+      </Config>
+    </FileSet>
+    <FileSet Name="bd_video_ic_hp3_imp_xbar_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/bd_video_ic_hp3_imp_xbar_0" RelGenDir="$PGENDIR/bd_video_ic_hp3_imp_xbar_0">
+      <Config>
+        <Option Name="TopModule" Val="bd_video_ic_hp3_imp_xbar_0"/>
+        <Option Name="UseBlackboxStub" Val="1"/>
+      </Config>
+    </FileSet>
+    <FileSet Name="bd_video_ic_hp2_imp_auto_pc_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/bd_video_ic_hp2_imp_auto_pc_0" RelGenDir="$PGENDIR/bd_video_ic_hp2_imp_auto_pc_0">
+      <Config>
+        <Option Name="TopModule" Val="bd_video_ic_hp2_imp_auto_pc_0"/>
         <Option Name="UseBlackboxStub" Val="1"/>
       </Config>
     </FileSet>
@@ -434,7 +472,43 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
+    <Run Id="bd_video_rgb2dvi_0_0_synth_1" Type="Ft3:Synth" SrcSet="bd_video_rgb2dvi_0_0" Part="xc7z020clg400-1" ConstrsSet="bd_video_rgb2dvi_0_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/bd_video_rgb2dvi_0_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_rgb2dvi_0_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_rgb2dvi_0_0_synth_1" ParallelReportGen="true">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2025">
+          <Desc>Vivado Synthesis Defaults</Desc>
+        </StratHandle>
+        <Step Id="synth_design"/>
+      </Strategy>
+      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
+      <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2025"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="bd_video_dvp_capture_0_0_synth_1" Type="Ft3:Synth" SrcSet="bd_video_dvp_capture_0_0" Part="xc7z020clg400-1" ConstrsSet="bd_video_dvp_capture_0_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/bd_video_dvp_capture_0_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_dvp_capture_0_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_dvp_capture_0_0_synth_1" ParallelReportGen="true">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2025">
+          <Desc>Vivado Synthesis Defaults</Desc>
+        </StratHandle>
+        <Step Id="synth_design"/>
+      </Strategy>
+      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
+      <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2025"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
     <Run Id="bd_video_rst_100m_0_synth_1" Type="Ft3:Synth" SrcSet="bd_video_rst_100m_0" Part="xc7z020clg400-1" ConstrsSet="bd_video_rst_100m_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/bd_video_rst_100m_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_rst_100m_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_rst_100m_0_synth_1" ParallelReportGen="true">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2025">
+          <Desc>Vivado Synthesis Defaults</Desc>
+        </StratHandle>
+        <Step Id="synth_design"/>
+      </Strategy>
+      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
+      <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2025"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="bd_video_rgb565_888_0_0_synth_1" Type="Ft3:Synth" SrcSet="bd_video_rgb565_888_0_0" Part="xc7z020clg400-1" ConstrsSet="bd_video_rgb565_888_0_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/bd_video_rgb565_888_0_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_rgb565_888_0_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_rgb565_888_0_0_synth_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2025">
           <Desc>Vivado Synthesis Defaults</Desc>
@@ -458,18 +532,6 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="bd_video_v_tc_0_synth_1" Type="Ft3:Synth" SrcSet="bd_video_v_tc_0" Part="xc7z020clg400-1" ConstrsSet="bd_video_v_tc_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/bd_video_v_tc_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_v_tc_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_v_tc_0_synth_1" ParallelReportGen="true">
-      <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2025">
-          <Desc>Vivado Synthesis Defaults</Desc>
-        </StratHandle>
-        <Step Id="synth_design"/>
-      </Strategy>
-      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
-      <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2025"/>
-      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
-      <RQSFiles/>
-    </Run>
     <Run Id="bd_video_ps7_0_synth_1" Type="Ft3:Synth" SrcSet="bd_video_ps7_0" Part="xc7z020clg400-1" ConstrsSet="bd_video_ps7_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/bd_video_ps7_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_ps7_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_ps7_0_synth_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2025">
@@ -482,7 +544,7 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="bd_video_ic_ctrl_imp_auto_pc_0_synth_1" Type="Ft3:Synth" SrcSet="bd_video_ic_ctrl_imp_auto_pc_0" Part="xc7z020clg400-1" ConstrsSet="bd_video_ic_ctrl_imp_auto_pc_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/bd_video_ic_ctrl_imp_auto_pc_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_ic_ctrl_imp_auto_pc_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_ic_ctrl_imp_auto_pc_0_synth_1" ParallelReportGen="true">
+    <Run Id="bd_video_v_tc_0_synth_1" Type="Ft3:Synth" SrcSet="bd_video_v_tc_0" Part="xc7z020clg400-1" ConstrsSet="bd_video_v_tc_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/bd_video_v_tc_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_v_tc_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_v_tc_0_synth_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2025">
           <Desc>Vivado Synthesis Defaults</Desc>
@@ -494,19 +556,7 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="bd_video_iobuf_sda_0_0_synth_1" Type="Ft3:Synth" SrcSet="bd_video_iobuf_sda_0_0" Part="xc7z020clg400-1" ConstrsSet="bd_video_iobuf_sda_0_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/bd_video_iobuf_sda_0_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_iobuf_sda_0_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_iobuf_sda_0_0_synth_1" ParallelReportGen="true">
-      <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2025">
-          <Desc>Vivado Synthesis Defaults</Desc>
-        </StratHandle>
-        <Step Id="synth_design"/>
-      </Strategy>
-      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
-      <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2025"/>
-      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
-      <RQSFiles/>
-    </Run>
-    <Run Id="bd_video_dvp_capture_0_0_synth_1" Type="Ft3:Synth" SrcSet="bd_video_dvp_capture_0_0" Part="xc7z020clg400-1" ConstrsSet="bd_video_dvp_capture_0_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/bd_video_dvp_capture_0_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_dvp_capture_0_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_dvp_capture_0_0_synth_1" ParallelReportGen="true">
+    <Run Id="bd_video_v_axi4s_vid_out_0_synth_1" Type="Ft3:Synth" SrcSet="bd_video_v_axi4s_vid_out_0" Part="xc7z020clg400-1" ConstrsSet="bd_video_v_axi4s_vid_out_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/bd_video_v_axi4s_vid_out_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_v_axi4s_vid_out_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_v_axi4s_vid_out_0_synth_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2025">
           <Desc>Vivado Synthesis Defaults</Desc>
@@ -542,103 +592,7 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="bd_video_ic_ctrl_imp_xbar_0_synth_1" Type="Ft3:Synth" SrcSet="bd_video_ic_ctrl_imp_xbar_0" Part="xc7z020clg400-1" ConstrsSet="bd_video_ic_ctrl_imp_xbar_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/bd_video_ic_ctrl_imp_xbar_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_ic_ctrl_imp_xbar_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_ic_ctrl_imp_xbar_0_synth_1" ParallelReportGen="true">
-      <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2025">
-          <Desc>Vivado Synthesis Defaults</Desc>
-        </StratHandle>
-        <Step Id="synth_design"/>
-      </Strategy>
-      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
-      <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2025"/>
-      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
-      <RQSFiles/>
-    </Run>
-    <Run Id="bd_video_dma_out_0_synth_1" Type="Ft3:Synth" SrcSet="bd_video_dma_out_0" Part="xc7z020clg400-1" ConstrsSet="bd_video_dma_out_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/bd_video_dma_out_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_dma_out_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_dma_out_0_synth_1" ParallelReportGen="true">
-      <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2025">
-          <Desc>Vivado Synthesis Defaults</Desc>
-        </StratHandle>
-        <Step Id="synth_design"/>
-      </Strategy>
-      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
-      <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2025"/>
-      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
-      <RQSFiles/>
-    </Run>
-    <Run Id="bd_video_ic_hp2_imp_auto_pc_0_synth_1" Type="Ft3:Synth" SrcSet="bd_video_ic_hp2_imp_auto_pc_0" Part="xc7z020clg400-1" ConstrsSet="bd_video_ic_hp2_imp_auto_pc_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/bd_video_ic_hp2_imp_auto_pc_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_ic_hp2_imp_auto_pc_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_ic_hp2_imp_auto_pc_0_synth_1" ParallelReportGen="true">
-      <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2025">
-          <Desc>Vivado Synthesis Defaults</Desc>
-        </StratHandle>
-        <Step Id="synth_design"/>
-      </Strategy>
-      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
-      <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2025"/>
-      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
-      <RQSFiles/>
-    </Run>
-    <Run Id="bd_video_v_axi4s_vid_out_0_synth_1" Type="Ft3:Synth" SrcSet="bd_video_v_axi4s_vid_out_0" Part="xc7z020clg400-1" ConstrsSet="bd_video_v_axi4s_vid_out_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/bd_video_v_axi4s_vid_out_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_v_axi4s_vid_out_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_v_axi4s_vid_out_0_synth_1" ParallelReportGen="true">
-      <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2025">
-          <Desc>Vivado Synthesis Defaults</Desc>
-        </StratHandle>
-        <Step Id="synth_design"/>
-      </Strategy>
-      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
-      <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2025"/>
-      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
-      <RQSFiles/>
-    </Run>
-    <Run Id="bd_video_ov5640_regs_0_0_synth_1" Type="Ft3:Synth" SrcSet="bd_video_ov5640_regs_0_0" Part="xc7z020clg400-1" ConstrsSet="bd_video_ov5640_regs_0_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/bd_video_ov5640_regs_0_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_ov5640_regs_0_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_ov5640_regs_0_0_synth_1" ParallelReportGen="true">
-      <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2025">
-          <Desc>Vivado Synthesis Defaults</Desc>
-        </StratHandle>
-        <Step Id="synth_design"/>
-      </Strategy>
-      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
-      <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2025"/>
-      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
-      <RQSFiles/>
-    </Run>
-    <Run Id="bd_video_ic_hp1_imp_auto_pc_0_synth_1" Type="Ft3:Synth" SrcSet="bd_video_ic_hp1_imp_auto_pc_0" Part="xc7z020clg400-1" ConstrsSet="bd_video_ic_hp1_imp_auto_pc_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/bd_video_ic_hp1_imp_auto_pc_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_ic_hp1_imp_auto_pc_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_ic_hp1_imp_auto_pc_0_synth_1" ParallelReportGen="true">
-      <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2025">
-          <Desc>Vivado Synthesis Defaults</Desc>
-        </StratHandle>
-        <Step Id="synth_design"/>
-      </Strategy>
-      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
-      <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2025"/>
-      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
-      <RQSFiles/>
-    </Run>
-    <Run Id="bd_video_gesture_preproc_0_0_synth_1" Type="Ft3:Synth" SrcSet="bd_video_gesture_preproc_0_0" Part="xc7z020clg400-1" ConstrsSet="bd_video_gesture_preproc_0_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/bd_video_gesture_preproc_0_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_gesture_preproc_0_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_gesture_preproc_0_0_synth_1" ParallelReportGen="true">
-      <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2025">
-          <Desc>Vivado Synthesis Defaults</Desc>
-        </StratHandle>
-        <Step Id="synth_design"/>
-      </Strategy>
-      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
-      <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2025"/>
-      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
-      <RQSFiles/>
-    </Run>
-    <Run Id="bd_video_dma_in_0_synth_1" Type="Ft3:Synth" SrcSet="bd_video_dma_in_0" Part="xc7z020clg400-1" ConstrsSet="bd_video_dma_in_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/bd_video_dma_in_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_dma_in_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_dma_in_0_synth_1" ParallelReportGen="true">
-      <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2025">
-          <Desc>Vivado Synthesis Defaults</Desc>
-        </StratHandle>
-        <Step Id="synth_design"/>
-      </Strategy>
-      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
-      <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2025"/>
-      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
-      <RQSFiles/>
-    </Run>
-    <Run Id="bd_video_ic_hp3_imp_xbar_0_synth_1" Type="Ft3:Synth" SrcSet="bd_video_ic_hp3_imp_xbar_0" Part="xc7z020clg400-1" ConstrsSet="bd_video_ic_hp3_imp_xbar_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/bd_video_ic_hp3_imp_xbar_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_ic_hp3_imp_xbar_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_ic_hp3_imp_xbar_0_synth_1" ParallelReportGen="true">
+    <Run Id="bd_video_ic_hp3_imp_auto_pc_0_synth_1" Type="Ft3:Synth" SrcSet="bd_video_ic_hp3_imp_auto_pc_0" Part="xc7z020clg400-1" ConstrsSet="bd_video_ic_hp3_imp_auto_pc_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/bd_video_ic_hp3_imp_auto_pc_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_ic_hp3_imp_auto_pc_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_ic_hp3_imp_auto_pc_0_synth_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2025">
           <Desc>Vivado Synthesis Defaults</Desc>
@@ -662,7 +616,139 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="bd_video_ic_hp3_imp_auto_pc_0_synth_1" Type="Ft3:Synth" SrcSet="bd_video_ic_hp3_imp_auto_pc_0" Part="xc7z020clg400-1" ConstrsSet="bd_video_ic_hp3_imp_auto_pc_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/bd_video_ic_hp3_imp_auto_pc_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_ic_hp3_imp_auto_pc_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_ic_hp3_imp_auto_pc_0_synth_1" ParallelReportGen="true">
+    <Run Id="bd_video_gesture_preproc_0_0_synth_1" Type="Ft3:Synth" SrcSet="bd_video_gesture_preproc_0_0" Part="xc7z020clg400-1" ConstrsSet="bd_video_gesture_preproc_0_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/bd_video_gesture_preproc_0_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_gesture_preproc_0_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_gesture_preproc_0_0_synth_1" ParallelReportGen="true">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2025">
+          <Desc>Vivado Synthesis Defaults</Desc>
+        </StratHandle>
+        <Step Id="synth_design"/>
+      </Strategy>
+      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
+      <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2025"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="bd_video_rst_pix_0_synth_1" Type="Ft3:Synth" SrcSet="bd_video_rst_pix_0" Part="xc7z020clg400-1" ConstrsSet="bd_video_rst_pix_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/bd_video_rst_pix_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_rst_pix_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_rst_pix_0_synth_1" ParallelReportGen="true">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2025">
+          <Desc>Vivado Synthesis Defaults</Desc>
+        </StratHandle>
+        <Step Id="synth_design"/>
+      </Strategy>
+      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
+      <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2025"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="bd_video_ov5640_regs_0_0_synth_1" Type="Ft3:Synth" SrcSet="bd_video_ov5640_regs_0_0" Part="xc7z020clg400-1" ConstrsSet="bd_video_ov5640_regs_0_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/bd_video_ov5640_regs_0_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_ov5640_regs_0_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_ov5640_regs_0_0_synth_1" ParallelReportGen="true">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2025">
+          <Desc>Vivado Synthesis Defaults</Desc>
+        </StratHandle>
+        <Step Id="synth_design"/>
+      </Strategy>
+      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
+      <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2025"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="bd_video_clk_wiz_pix_0_synth_1" Type="Ft3:Synth" SrcSet="bd_video_clk_wiz_pix_0" Part="xc7z020clg400-1" ConstrsSet="bd_video_clk_wiz_pix_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/bd_video_clk_wiz_pix_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_clk_wiz_pix_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_clk_wiz_pix_0_synth_1" ParallelReportGen="true">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2025">
+          <Desc>Vivado Synthesis Defaults</Desc>
+        </StratHandle>
+        <Step Id="synth_design"/>
+      </Strategy>
+      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
+      <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2025"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="bd_video_iobuf_sda_0_0_synth_1" Type="Ft3:Synth" SrcSet="bd_video_iobuf_sda_0_0" Part="xc7z020clg400-1" ConstrsSet="bd_video_iobuf_sda_0_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/bd_video_iobuf_sda_0_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_iobuf_sda_0_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_iobuf_sda_0_0_synth_1" ParallelReportGen="true">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2025">
+          <Desc>Vivado Synthesis Defaults</Desc>
+        </StratHandle>
+        <Step Id="synth_design"/>
+      </Strategy>
+      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
+      <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2025"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="bd_video_dma_in_0_synth_1" Type="Ft3:Synth" SrcSet="bd_video_dma_in_0" Part="xc7z020clg400-1" ConstrsSet="bd_video_dma_in_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/bd_video_dma_in_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_dma_in_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_dma_in_0_synth_1" ParallelReportGen="true">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2025">
+          <Desc>Vivado Synthesis Defaults</Desc>
+        </StratHandle>
+        <Step Id="synth_design"/>
+      </Strategy>
+      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
+      <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2025"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="bd_video_ic_ctrl_imp_xbar_0_synth_1" Type="Ft3:Synth" SrcSet="bd_video_ic_ctrl_imp_xbar_0" Part="xc7z020clg400-1" ConstrsSet="bd_video_ic_ctrl_imp_xbar_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/bd_video_ic_ctrl_imp_xbar_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_ic_ctrl_imp_xbar_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_ic_ctrl_imp_xbar_0_synth_1" ParallelReportGen="true">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2025">
+          <Desc>Vivado Synthesis Defaults</Desc>
+        </StratHandle>
+        <Step Id="synth_design"/>
+      </Strategy>
+      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
+      <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2025"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="bd_video_ic_ctrl_imp_auto_pc_0_synth_1" Type="Ft3:Synth" SrcSet="bd_video_ic_ctrl_imp_auto_pc_0" Part="xc7z020clg400-1" ConstrsSet="bd_video_ic_ctrl_imp_auto_pc_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/bd_video_ic_ctrl_imp_auto_pc_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_ic_ctrl_imp_auto_pc_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_ic_ctrl_imp_auto_pc_0_synth_1" ParallelReportGen="true">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2025">
+          <Desc>Vivado Synthesis Defaults</Desc>
+        </StratHandle>
+        <Step Id="synth_design"/>
+      </Strategy>
+      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
+      <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2025"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="bd_video_ic_hp1_imp_auto_pc_0_synth_1" Type="Ft3:Synth" SrcSet="bd_video_ic_hp1_imp_auto_pc_0" Part="xc7z020clg400-1" ConstrsSet="bd_video_ic_hp1_imp_auto_pc_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/bd_video_ic_hp1_imp_auto_pc_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_ic_hp1_imp_auto_pc_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_ic_hp1_imp_auto_pc_0_synth_1" ParallelReportGen="true">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2025">
+          <Desc>Vivado Synthesis Defaults</Desc>
+        </StratHandle>
+        <Step Id="synth_design"/>
+      </Strategy>
+      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
+      <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2025"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="bd_video_dma_out_0_synth_1" Type="Ft3:Synth" SrcSet="bd_video_dma_out_0" Part="xc7z020clg400-1" ConstrsSet="bd_video_dma_out_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/bd_video_dma_out_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_dma_out_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_dma_out_0_synth_1" ParallelReportGen="true">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2025">
+          <Desc>Vivado Synthesis Defaults</Desc>
+        </StratHandle>
+        <Step Id="synth_design"/>
+      </Strategy>
+      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
+      <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2025"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="bd_video_ic_hp3_imp_xbar_0_synth_1" Type="Ft3:Synth" SrcSet="bd_video_ic_hp3_imp_xbar_0" Part="xc7z020clg400-1" ConstrsSet="bd_video_ic_hp3_imp_xbar_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/bd_video_ic_hp3_imp_xbar_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_ic_hp3_imp_xbar_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_ic_hp3_imp_xbar_0_synth_1" ParallelReportGen="true">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2025">
+          <Desc>Vivado Synthesis Defaults</Desc>
+        </StratHandle>
+        <Step Id="synth_design"/>
+      </Strategy>
+      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
+      <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2025"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="bd_video_ic_hp2_imp_auto_pc_0_synth_1" Type="Ft3:Synth" SrcSet="bd_video_ic_hp2_imp_auto_pc_0" Part="xc7z020clg400-1" ConstrsSet="bd_video_ic_hp2_imp_auto_pc_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/bd_video_ic_hp2_imp_auto_pc_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_ic_hp2_imp_auto_pc_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_ic_hp2_imp_auto_pc_0_synth_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2025">
           <Desc>Vivado Synthesis Defaults</Desc>
@@ -711,14 +797,71 @@
         <Step Id="phys_opt_design"/>
         <Step Id="route_design"/>
         <Step Id="post_route_phys_opt_design"/>
-        <Step Id="write_bitstream" PreStepTclHook="$PPRDIR/../constraints/hdmi_drc_hook.tcl"/>
+        <Step Id="write_bitstream"/>
       </Strategy>
       <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
       <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2025"/>
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
+    <Run Id="bd_video_rgb2dvi_0_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="bd_video_rgb2dvi_0_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="bd_video_rgb2dvi_0_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_rgb2dvi_0_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_rgb2dvi_0_0_impl_1" ParallelReportGen="true">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2025">
+          <Desc>Default settings for Implementation.</Desc>
+        </StratHandle>
+        <Step Id="init_design"/>
+        <Step Id="opt_design"/>
+        <Step Id="power_opt_design"/>
+        <Step Id="place_design"/>
+        <Step Id="post_place_power_opt_design"/>
+        <Step Id="phys_opt_design"/>
+        <Step Id="route_design"/>
+        <Step Id="post_route_phys_opt_design"/>
+        <Step Id="write_bitstream"/>
+      </Strategy>
+      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2025"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="bd_video_dvp_capture_0_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="bd_video_dvp_capture_0_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="bd_video_dvp_capture_0_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_dvp_capture_0_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_dvp_capture_0_0_impl_1" ParallelReportGen="true">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2025">
+          <Desc>Default settings for Implementation.</Desc>
+        </StratHandle>
+        <Step Id="init_design"/>
+        <Step Id="opt_design"/>
+        <Step Id="power_opt_design"/>
+        <Step Id="place_design"/>
+        <Step Id="post_place_power_opt_design"/>
+        <Step Id="phys_opt_design"/>
+        <Step Id="route_design"/>
+        <Step Id="post_route_phys_opt_design"/>
+        <Step Id="write_bitstream"/>
+      </Strategy>
+      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2025"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
     <Run Id="bd_video_rst_100m_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="bd_video_rst_100m_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="bd_video_rst_100m_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_rst_100m_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_rst_100m_0_impl_1" ParallelReportGen="true">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2025">
+          <Desc>Default settings for Implementation.</Desc>
+        </StratHandle>
+        <Step Id="init_design"/>
+        <Step Id="opt_design"/>
+        <Step Id="power_opt_design"/>
+        <Step Id="place_design"/>
+        <Step Id="post_place_power_opt_design"/>
+        <Step Id="phys_opt_design"/>
+        <Step Id="route_design"/>
+        <Step Id="post_route_phys_opt_design"/>
+        <Step Id="write_bitstream"/>
+      </Strategy>
+      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2025"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="bd_video_rgb565_888_0_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="bd_video_rgb565_888_0_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="bd_video_rgb565_888_0_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_rgb565_888_0_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_rgb565_888_0_0_impl_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2025">
           <Desc>Default settings for Implementation.</Desc>
@@ -756,25 +899,6 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="bd_video_v_tc_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="bd_video_v_tc_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="bd_video_v_tc_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_v_tc_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_v_tc_0_impl_1" ParallelReportGen="true">
-      <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2025">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
-        <Step Id="init_design"/>
-        <Step Id="opt_design"/>
-        <Step Id="power_opt_design"/>
-        <Step Id="place_design"/>
-        <Step Id="post_place_power_opt_design"/>
-        <Step Id="phys_opt_design"/>
-        <Step Id="route_design"/>
-        <Step Id="post_route_phys_opt_design"/>
-        <Step Id="write_bitstream"/>
-      </Strategy>
-      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2025"/>
-      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
-      <RQSFiles/>
-    </Run>
     <Run Id="bd_video_ps7_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="bd_video_ps7_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="bd_video_ps7_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_ps7_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_ps7_0_impl_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2025">
@@ -794,7 +918,7 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="bd_video_ic_ctrl_imp_auto_pc_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="bd_video_ic_ctrl_imp_auto_pc_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="bd_video_ic_ctrl_imp_auto_pc_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_ic_ctrl_imp_auto_pc_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_ic_ctrl_imp_auto_pc_0_impl_1" ParallelReportGen="true">
+    <Run Id="bd_video_v_tc_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="bd_video_v_tc_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="bd_video_v_tc_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_v_tc_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_v_tc_0_impl_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2025">
           <Desc>Default settings for Implementation.</Desc>
@@ -813,26 +937,7 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="bd_video_iobuf_sda_0_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="bd_video_iobuf_sda_0_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="bd_video_iobuf_sda_0_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_iobuf_sda_0_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_iobuf_sda_0_0_impl_1" ParallelReportGen="true">
-      <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2025">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
-        <Step Id="init_design"/>
-        <Step Id="opt_design"/>
-        <Step Id="power_opt_design"/>
-        <Step Id="place_design"/>
-        <Step Id="post_place_power_opt_design"/>
-        <Step Id="phys_opt_design"/>
-        <Step Id="route_design"/>
-        <Step Id="post_route_phys_opt_design"/>
-        <Step Id="write_bitstream"/>
-      </Strategy>
-      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2025"/>
-      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
-      <RQSFiles/>
-    </Run>
-    <Run Id="bd_video_dvp_capture_0_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="bd_video_dvp_capture_0_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="bd_video_dvp_capture_0_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_dvp_capture_0_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_dvp_capture_0_0_impl_1" ParallelReportGen="true">
+    <Run Id="bd_video_v_axi4s_vid_out_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="bd_video_v_axi4s_vid_out_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="bd_video_v_axi4s_vid_out_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_v_axi4s_vid_out_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_v_axi4s_vid_out_0_impl_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2025">
           <Desc>Default settings for Implementation.</Desc>
@@ -889,159 +994,7 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="bd_video_ic_ctrl_imp_xbar_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="bd_video_ic_ctrl_imp_xbar_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="bd_video_ic_ctrl_imp_xbar_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_ic_ctrl_imp_xbar_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_ic_ctrl_imp_xbar_0_impl_1" ParallelReportGen="true">
-      <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2025">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
-        <Step Id="init_design"/>
-        <Step Id="opt_design"/>
-        <Step Id="power_opt_design"/>
-        <Step Id="place_design"/>
-        <Step Id="post_place_power_opt_design"/>
-        <Step Id="phys_opt_design"/>
-        <Step Id="route_design"/>
-        <Step Id="post_route_phys_opt_design"/>
-        <Step Id="write_bitstream"/>
-      </Strategy>
-      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2025"/>
-      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
-      <RQSFiles/>
-    </Run>
-    <Run Id="bd_video_dma_out_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="bd_video_dma_out_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="bd_video_dma_out_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_dma_out_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_dma_out_0_impl_1" ParallelReportGen="true">
-      <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2025">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
-        <Step Id="init_design"/>
-        <Step Id="opt_design"/>
-        <Step Id="power_opt_design"/>
-        <Step Id="place_design"/>
-        <Step Id="post_place_power_opt_design"/>
-        <Step Id="phys_opt_design"/>
-        <Step Id="route_design"/>
-        <Step Id="post_route_phys_opt_design"/>
-        <Step Id="write_bitstream"/>
-      </Strategy>
-      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2025"/>
-      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
-      <RQSFiles/>
-    </Run>
-    <Run Id="bd_video_ic_hp2_imp_auto_pc_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="bd_video_ic_hp2_imp_auto_pc_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="bd_video_ic_hp2_imp_auto_pc_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_ic_hp2_imp_auto_pc_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_ic_hp2_imp_auto_pc_0_impl_1" ParallelReportGen="true">
-      <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2025">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
-        <Step Id="init_design"/>
-        <Step Id="opt_design"/>
-        <Step Id="power_opt_design"/>
-        <Step Id="place_design"/>
-        <Step Id="post_place_power_opt_design"/>
-        <Step Id="phys_opt_design"/>
-        <Step Id="route_design"/>
-        <Step Id="post_route_phys_opt_design"/>
-        <Step Id="write_bitstream"/>
-      </Strategy>
-      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2025"/>
-      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
-      <RQSFiles/>
-    </Run>
-    <Run Id="bd_video_v_axi4s_vid_out_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="bd_video_v_axi4s_vid_out_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="bd_video_v_axi4s_vid_out_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_v_axi4s_vid_out_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_v_axi4s_vid_out_0_impl_1" ParallelReportGen="true">
-      <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2025">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
-        <Step Id="init_design"/>
-        <Step Id="opt_design"/>
-        <Step Id="power_opt_design"/>
-        <Step Id="place_design"/>
-        <Step Id="post_place_power_opt_design"/>
-        <Step Id="phys_opt_design"/>
-        <Step Id="route_design"/>
-        <Step Id="post_route_phys_opt_design"/>
-        <Step Id="write_bitstream"/>
-      </Strategy>
-      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2025"/>
-      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
-      <RQSFiles/>
-    </Run>
-    <Run Id="bd_video_ov5640_regs_0_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="bd_video_ov5640_regs_0_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="bd_video_ov5640_regs_0_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_ov5640_regs_0_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_ov5640_regs_0_0_impl_1" ParallelReportGen="true">
-      <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2025">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
-        <Step Id="init_design"/>
-        <Step Id="opt_design"/>
-        <Step Id="power_opt_design"/>
-        <Step Id="place_design"/>
-        <Step Id="post_place_power_opt_design"/>
-        <Step Id="phys_opt_design"/>
-        <Step Id="route_design"/>
-        <Step Id="post_route_phys_opt_design"/>
-        <Step Id="write_bitstream"/>
-      </Strategy>
-      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2025"/>
-      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
-      <RQSFiles/>
-    </Run>
-    <Run Id="bd_video_ic_hp1_imp_auto_pc_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="bd_video_ic_hp1_imp_auto_pc_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="bd_video_ic_hp1_imp_auto_pc_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_ic_hp1_imp_auto_pc_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_ic_hp1_imp_auto_pc_0_impl_1" ParallelReportGen="true">
-      <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2025">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
-        <Step Id="init_design"/>
-        <Step Id="opt_design"/>
-        <Step Id="power_opt_design"/>
-        <Step Id="place_design"/>
-        <Step Id="post_place_power_opt_design"/>
-        <Step Id="phys_opt_design"/>
-        <Step Id="route_design"/>
-        <Step Id="post_route_phys_opt_design"/>
-        <Step Id="write_bitstream"/>
-      </Strategy>
-      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2025"/>
-      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
-      <RQSFiles/>
-    </Run>
-    <Run Id="bd_video_gesture_preproc_0_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="bd_video_gesture_preproc_0_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="bd_video_gesture_preproc_0_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_gesture_preproc_0_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_gesture_preproc_0_0_impl_1" ParallelReportGen="true">
-      <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2025">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
-        <Step Id="init_design"/>
-        <Step Id="opt_design"/>
-        <Step Id="power_opt_design"/>
-        <Step Id="place_design"/>
-        <Step Id="post_place_power_opt_design"/>
-        <Step Id="phys_opt_design"/>
-        <Step Id="route_design"/>
-        <Step Id="post_route_phys_opt_design"/>
-        <Step Id="write_bitstream"/>
-      </Strategy>
-      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2025"/>
-      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
-      <RQSFiles/>
-    </Run>
-    <Run Id="bd_video_dma_in_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="bd_video_dma_in_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="bd_video_dma_in_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_dma_in_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_dma_in_0_impl_1" ParallelReportGen="true">
-      <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2025">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
-        <Step Id="init_design"/>
-        <Step Id="opt_design"/>
-        <Step Id="power_opt_design"/>
-        <Step Id="place_design"/>
-        <Step Id="post_place_power_opt_design"/>
-        <Step Id="phys_opt_design"/>
-        <Step Id="route_design"/>
-        <Step Id="post_route_phys_opt_design"/>
-        <Step Id="write_bitstream"/>
-      </Strategy>
-      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2025"/>
-      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
-      <RQSFiles/>
-    </Run>
-    <Run Id="bd_video_ic_hp3_imp_xbar_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="bd_video_ic_hp3_imp_xbar_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="bd_video_ic_hp3_imp_xbar_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_ic_hp3_imp_xbar_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_ic_hp3_imp_xbar_0_impl_1" ParallelReportGen="true">
+    <Run Id="bd_video_ic_hp3_imp_auto_pc_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="bd_video_ic_hp3_imp_auto_pc_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="bd_video_ic_hp3_imp_auto_pc_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_ic_hp3_imp_auto_pc_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_ic_hp3_imp_auto_pc_0_impl_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2025">
           <Desc>Default settings for Implementation.</Desc>
@@ -1079,7 +1032,216 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="bd_video_ic_hp3_imp_auto_pc_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="bd_video_ic_hp3_imp_auto_pc_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="bd_video_ic_hp3_imp_auto_pc_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_ic_hp3_imp_auto_pc_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_ic_hp3_imp_auto_pc_0_impl_1" ParallelReportGen="true">
+    <Run Id="bd_video_gesture_preproc_0_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="bd_video_gesture_preproc_0_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="bd_video_gesture_preproc_0_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_gesture_preproc_0_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_gesture_preproc_0_0_impl_1" ParallelReportGen="true">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2025">
+          <Desc>Default settings for Implementation.</Desc>
+        </StratHandle>
+        <Step Id="init_design"/>
+        <Step Id="opt_design"/>
+        <Step Id="power_opt_design"/>
+        <Step Id="place_design"/>
+        <Step Id="post_place_power_opt_design"/>
+        <Step Id="phys_opt_design"/>
+        <Step Id="route_design"/>
+        <Step Id="post_route_phys_opt_design"/>
+        <Step Id="write_bitstream"/>
+      </Strategy>
+      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2025"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="bd_video_rst_pix_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="bd_video_rst_pix_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="bd_video_rst_pix_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_rst_pix_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_rst_pix_0_impl_1" ParallelReportGen="true">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2025">
+          <Desc>Default settings for Implementation.</Desc>
+        </StratHandle>
+        <Step Id="init_design"/>
+        <Step Id="opt_design"/>
+        <Step Id="power_opt_design"/>
+        <Step Id="place_design"/>
+        <Step Id="post_place_power_opt_design"/>
+        <Step Id="phys_opt_design"/>
+        <Step Id="route_design"/>
+        <Step Id="post_route_phys_opt_design"/>
+        <Step Id="write_bitstream"/>
+      </Strategy>
+      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2025"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="bd_video_ov5640_regs_0_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="bd_video_ov5640_regs_0_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="bd_video_ov5640_regs_0_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_ov5640_regs_0_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_ov5640_regs_0_0_impl_1" ParallelReportGen="true">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2025">
+          <Desc>Default settings for Implementation.</Desc>
+        </StratHandle>
+        <Step Id="init_design"/>
+        <Step Id="opt_design"/>
+        <Step Id="power_opt_design"/>
+        <Step Id="place_design"/>
+        <Step Id="post_place_power_opt_design"/>
+        <Step Id="phys_opt_design"/>
+        <Step Id="route_design"/>
+        <Step Id="post_route_phys_opt_design"/>
+        <Step Id="write_bitstream"/>
+      </Strategy>
+      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2025"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="bd_video_clk_wiz_pix_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="bd_video_clk_wiz_pix_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="bd_video_clk_wiz_pix_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_clk_wiz_pix_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_clk_wiz_pix_0_impl_1" ParallelReportGen="true">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2025">
+          <Desc>Default settings for Implementation.</Desc>
+        </StratHandle>
+        <Step Id="init_design"/>
+        <Step Id="opt_design"/>
+        <Step Id="power_opt_design"/>
+        <Step Id="place_design"/>
+        <Step Id="post_place_power_opt_design"/>
+        <Step Id="phys_opt_design"/>
+        <Step Id="route_design"/>
+        <Step Id="post_route_phys_opt_design"/>
+        <Step Id="write_bitstream"/>
+      </Strategy>
+      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2025"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="bd_video_iobuf_sda_0_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="bd_video_iobuf_sda_0_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="bd_video_iobuf_sda_0_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_iobuf_sda_0_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_iobuf_sda_0_0_impl_1" ParallelReportGen="true">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2025">
+          <Desc>Default settings for Implementation.</Desc>
+        </StratHandle>
+        <Step Id="init_design"/>
+        <Step Id="opt_design"/>
+        <Step Id="power_opt_design"/>
+        <Step Id="place_design"/>
+        <Step Id="post_place_power_opt_design"/>
+        <Step Id="phys_opt_design"/>
+        <Step Id="route_design"/>
+        <Step Id="post_route_phys_opt_design"/>
+        <Step Id="write_bitstream"/>
+      </Strategy>
+      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2025"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="bd_video_dma_in_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="bd_video_dma_in_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="bd_video_dma_in_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_dma_in_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_dma_in_0_impl_1" ParallelReportGen="true">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2025">
+          <Desc>Default settings for Implementation.</Desc>
+        </StratHandle>
+        <Step Id="init_design"/>
+        <Step Id="opt_design"/>
+        <Step Id="power_opt_design"/>
+        <Step Id="place_design"/>
+        <Step Id="post_place_power_opt_design"/>
+        <Step Id="phys_opt_design"/>
+        <Step Id="route_design"/>
+        <Step Id="post_route_phys_opt_design"/>
+        <Step Id="write_bitstream"/>
+      </Strategy>
+      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2025"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="bd_video_ic_ctrl_imp_xbar_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="bd_video_ic_ctrl_imp_xbar_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="bd_video_ic_ctrl_imp_xbar_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_ic_ctrl_imp_xbar_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_ic_ctrl_imp_xbar_0_impl_1" ParallelReportGen="true">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2025">
+          <Desc>Default settings for Implementation.</Desc>
+        </StratHandle>
+        <Step Id="init_design"/>
+        <Step Id="opt_design"/>
+        <Step Id="power_opt_design"/>
+        <Step Id="place_design"/>
+        <Step Id="post_place_power_opt_design"/>
+        <Step Id="phys_opt_design"/>
+        <Step Id="route_design"/>
+        <Step Id="post_route_phys_opt_design"/>
+        <Step Id="write_bitstream"/>
+      </Strategy>
+      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2025"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="bd_video_ic_ctrl_imp_auto_pc_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="bd_video_ic_ctrl_imp_auto_pc_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="bd_video_ic_ctrl_imp_auto_pc_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_ic_ctrl_imp_auto_pc_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_ic_ctrl_imp_auto_pc_0_impl_1" ParallelReportGen="true">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2025">
+          <Desc>Default settings for Implementation.</Desc>
+        </StratHandle>
+        <Step Id="init_design"/>
+        <Step Id="opt_design"/>
+        <Step Id="power_opt_design"/>
+        <Step Id="place_design"/>
+        <Step Id="post_place_power_opt_design"/>
+        <Step Id="phys_opt_design"/>
+        <Step Id="route_design"/>
+        <Step Id="post_route_phys_opt_design"/>
+        <Step Id="write_bitstream"/>
+      </Strategy>
+      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2025"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="bd_video_ic_hp1_imp_auto_pc_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="bd_video_ic_hp1_imp_auto_pc_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="bd_video_ic_hp1_imp_auto_pc_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_ic_hp1_imp_auto_pc_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_ic_hp1_imp_auto_pc_0_impl_1" ParallelReportGen="true">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2025">
+          <Desc>Default settings for Implementation.</Desc>
+        </StratHandle>
+        <Step Id="init_design"/>
+        <Step Id="opt_design"/>
+        <Step Id="power_opt_design"/>
+        <Step Id="place_design"/>
+        <Step Id="post_place_power_opt_design"/>
+        <Step Id="phys_opt_design"/>
+        <Step Id="route_design"/>
+        <Step Id="post_route_phys_opt_design"/>
+        <Step Id="write_bitstream"/>
+      </Strategy>
+      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2025"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="bd_video_dma_out_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="bd_video_dma_out_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="bd_video_dma_out_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_dma_out_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_dma_out_0_impl_1" ParallelReportGen="true">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2025">
+          <Desc>Default settings for Implementation.</Desc>
+        </StratHandle>
+        <Step Id="init_design"/>
+        <Step Id="opt_design"/>
+        <Step Id="power_opt_design"/>
+        <Step Id="place_design"/>
+        <Step Id="post_place_power_opt_design"/>
+        <Step Id="phys_opt_design"/>
+        <Step Id="route_design"/>
+        <Step Id="post_route_phys_opt_design"/>
+        <Step Id="write_bitstream"/>
+      </Strategy>
+      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2025"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="bd_video_ic_hp3_imp_xbar_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="bd_video_ic_hp3_imp_xbar_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="bd_video_ic_hp3_imp_xbar_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_ic_hp3_imp_xbar_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_ic_hp3_imp_xbar_0_impl_1" ParallelReportGen="true">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2025">
+          <Desc>Default settings for Implementation.</Desc>
+        </StratHandle>
+        <Step Id="init_design"/>
+        <Step Id="opt_design"/>
+        <Step Id="power_opt_design"/>
+        <Step Id="place_design"/>
+        <Step Id="post_place_power_opt_design"/>
+        <Step Id="phys_opt_design"/>
+        <Step Id="route_design"/>
+        <Step Id="post_route_phys_opt_design"/>
+        <Step Id="write_bitstream"/>
+      </Strategy>
+      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2025"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+      <RQSFiles/>
+    </Run>
+    <Run Id="bd_video_ic_hp2_imp_auto_pc_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z020clg400-1" ConstrsSet="bd_video_ic_hp2_imp_auto_pc_0" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="bd_video_ic_hp2_imp_auto_pc_0_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/bd_video_ic_hp2_imp_auto_pc_0_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/bd_video_ic_hp2_imp_auto_pc_0_impl_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2025">
           <Desc>Default settings for Implementation.</Desc>

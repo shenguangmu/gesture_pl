@@ -174,30 +174,38 @@ bash build/tools/rebuild_all.sh --upload     # 再传板 + 核 md5
 | BD / 时序 / 比特流 | ✅ DRC 0 Errors |
 | **静态图喂入** | ✅ **板上实测：与 golden 逐字节一致（0/9216）** |
 | **摄像头通路** | ⚠ **未通**（卡在 SCCB，`cfg_error=1`）—— **已不是关键路径** |
-| HDMI 输出 | ⚠ **未做** —— **当前比特流下不要接 HDMI 线**（HDMI 端口悬空）|
+| HDMI 输出 | ✅ **已实现 720p60** —— ⚠ **但尚未上板验证**（见下）|
 
 > **一句话**：PL 侧功能已验证到**板上输出与 golden 逐字节一致**（静态图通路）。
 > 摄像头是量程扩展，不是达标前提。
 
-### ⚠ HDMI 的现状（2026-09-26 补充）
+### HDMI 的现状（2026-09-26 更新：**通路已建好，待上板验证**）
 
-**数据通路已就绪，只差最后一段 TMDS 编码。**
+**✅ 已完成（方案 B 全部实现）：**
 
-`build/vivado/bd_video.tcl` §4–§6 里 **VDMA + v_tc + v_axi4s_vid_out
-三个 IP 已实例化并连好**，`vid_io_out` 也已导出为外部端口 `hdmi_vid_out`
-（§10）。缺的是 `vid_io_out`（并行 16bit RGB565）→ **TMDS 差分对**那一段，
-即 `build/vivado/constraints/video_io.xdc` 第 286 行起的「第四层」注释里
-写的**方案 B**。
+| 加的 | 是什么 |
+|---|---|
+| `clk_wiz_pix` | 像素时钟 **74.25 MHz**（720p60），M=37.125/D=5/N=10 → VCO 742.5 MHz |
+| `rgb2dvi_0` | Digilent TMDS 编码器，`kClkRange=2`（⚠ 默认 1 会锁不住） |
+| `rgb565_888_0` | 手写 `src/RTL/axis_rgb565_888.v`：VDMA 16bit → vid_out 24bit |
+| `rst_pix` | 像素域复位，`dcm_locked` 接 MMCM locked（否则静默黑屏） |
 
-**当前为什么不能接 HDMI 线**：那 22 个 `hdmi_vid_out_*` 端口**没有引脚
-绑定**，靠 `constraints/video_io_hdmi_tmp.xdc` + `hdmi_drc_hook.tcl`
-把 `NSTD-1` / `UCIO-1` 两条 DRC **降级为 Warning** 才生成的比特流。
-悬空 IO 电平不确定 —— 接显示器无效，且有风险。
+导出的端口从 22 根并行信号变成 **8 根 TMDS 差分对**（`hdmi_tmds_*`），
+引脚约束在 `build/vivado/constraints/video_io.xdc` 第四层（TMDS_33）。
+两个临时豁免文件（`video_io_hdmi_tmp.xdc` / `hdmi_drc_hook.tcl`）**已删除**。
 
-**做方案 B 时要动三处**：① `bd_video.tcl` 加 TMDS 编码器
-（PYNQ-Z2 是 **HDMI 直连 PL 的 TMDS 引脚**，板上无编码芯片，
-需 Digilent `rgb2dvi` 之类的开源 IP）② **删掉**上面那两个豁免文件
-③ 启用 `video_io.xdc` 第四层那张已备好的引脚表。
+**⚠ 尚未上板验证。** 构建通过 ≠ 显示正常。上板要按顺序：
+
+1. **先证明 TMDS 能出图** —— PS 往 VDMA 帧缓冲写**标准彩条**，看显示器
+2. 彩条正确后，再确认**帧率 60 Hz**（游戏需要）
+3. 最后接队友的游戏渲染
+
+⚠ 若**颜色不对**（尤其是绿蓝互换），几乎肯定是
+`axis_rgb565_888.v` 的**位序**问题 —— rgb2dvi 要的是 **RBG** 不是 RGB
+（见该文件头部的说明，那是从 rgb2dvi 源码查实、不是推测）。
+
+⚠ 若**无信号**：查 `report_io` 看 `hdmi_tmds_*` 有没有 LOC
+（引脚名写错时 XDC 是静默 no-op）。
 
 ---
 
