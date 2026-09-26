@@ -848,20 +848,45 @@ BD 里用 `const_one`（xlconstant=1）统一驱动。
 `BITSTREAM.CONFIG.UNUSEDPIN PULLNONE` 已移进 `video_io.xdc`。
 
 
-### 顺带要修的已有缺陷
+### ~~顺带要修的已有缺陷~~（已解决，2026-09-26）
 
-`bd_video.tcl` 里 `H_ACTIVE` / `H_FRONT` / `V_ACTIVE` 等常量
+~~`bd_video.tcl` 里 `H_ACTIVE` / `H_FRONT` / `V_ACTIVE` 等常量
 **只在一个 `puts` 里用过，没写进任何 IP**。`v_tc` 只设了
-`CONFIG.VIDEO_MODE {480p}`。做 B 时要一并补上显式时序参数：
+`CONFIG.VIDEO_MODE {480p}`。~~
 
-```tcl
-set_property -dict [list \
-    CONFIG.H_ACTIVE {640} CONFIG.H_FRONT {16} \
-    CONFIG.H_SYNC {96}    CONFIG.H_BACK  {48} \
-    CONFIG.V_ACTIVE {480} CONFIG.V_FRONT {10} \
-    CONFIG.V_SYNC {2}     CONFIG.V_BACK  {33} \
-] $vtc
-```
+**现状**：`v_tc` 改成了 `VIDEO_MODE {720p}`（=1280×720），
+并**显式开了 `enable_generation {1}`**，还加了读回断言确认
+`GEN_HACTIVE_SIZE=1280 / GEN_VACTIVE_SIZE=720` 真的解析成功。
+
+⚠ **但要注意一件事**：`v_tc` 的**运行时时序寄存器仍需软件写** ——
+配好 `VIDEO_MODE` 只保证 IP 参数正确，**不等于发生器会转**。
+详见下面「HDMI 必须软件配置」。
+
+那批 `H_ACTIVE`/`V_*` 常量现在**仍然只是 `puts` 用的**，
+**没有**被写进 IP（上面的旧建议没有采纳）—— 因为走 `VIDEO_MODE` 预设
+更可靠，手写一堆 `CONFIG.H_*` 反而多一层出错面。
+**若要改分辨率，改 `VIDEO_MODE` 即可。**
+
+---
+
+## HDMI 必须软件配置（2026-09-26 补记）
+
+> ⚠⚠ **烧完比特流显示器什么都不会有** —— 这不是坏，是**正常的**。
+
+`v_tc` 和 `vdma` 在 BD 里都开了 AXI-Lite（`C_HAS_AXI4_LITE=1`）。
+按 AMD PG016：**开了 AXI-Lite 就必须用软件配置**，VTC 寄存器复位后**默认全 0**。
+
+**∴ 「HDMI 通没通」无法只靠比特流证明。**
+
+上板跑 `host/hdmi_bringup.py`（分两阶段：先 v_tc 时序、再 vdma+彩条），
+判读方式见 `host/README.md` 与 `report/docs/board-bringup-guide.md`。
+
+⚠ 另外两个容易忽略的点：
+- `v_tc` 的**复位必须和它的时钟同域** —— 第一版把 `rst_pix/slowest_sync_clk`
+  接到 100 MHz 而非像素时钟，产生真实跨时钟域违例（WNS −4.436 ns）。
+- 四个时钟使能（`v_tc/clken`、`gen_clken`、`aclken`、`vid_io_out_ce`）
+  **悬空会被 BD tie-off 到 0**（只给 WARNING）→ 画面完全不动。
+  BD 里用 `const_one` 统一拉高。
 
 ---
 
@@ -897,7 +922,9 @@ set_property -dict [list \
 
 ### 最终资源占用（实现后实测）
 
-> **2026-09-23 更新**：`crop_scale` 改按比例分配后，LUT/FF 大幅上升。
+> **2026-09-23 更新**（下表数字对应该日期）：`crop_scale` 改按比例分配后，LUT/FF 大幅上升。
+> ⚠ **2026-09-26 含 HDMI 后已变为 LUT 26,056 (48.98%) / FF 31,264 (29.38%) /
+> Bonded IOB 21 (16.80%)** —— 最新数字见 `../build-report.md`。
 > 根因是 `acc[96]` 累加器数组必须 `ARRAY_PARTITION complete`
 > 才能保住主循环 II=1（不划分则退化 II=2、周期翻倍）。
 > **是有意取舍，不是缺陷**；回退方式见 `gesture_preproc.cpp` 注释。

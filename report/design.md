@@ -179,7 +179,8 @@ PL 相对**同一块板的 PS** 的加速比。**本作品应做同样的测量*
                         VDMA MM2S ◄── HP2 ◄─────────┘
                              │
                              ▼
-                     v_axi4s_vid_out ─► （并行视频；TMDS 编码器未做）
+        rgb565_888 ─► v_axi4s_vid_out(异步) ─► rgb2dvi ─TMDS─► HDMI OUT
+        （2026-09-26 完成；⚠ 尚未上板验证）
 
 【CNN 通路】从 DDR 取同一帧
  DDR(帧缓存) ─► dma_in(MM2S) ─► gesture_preproc ─► dma_out(S2MM) ─► DDR(96×96)
@@ -209,7 +210,8 @@ DDR 分叉的代价是多一次 DDR 往返（614 KB/帧读），三个 HP 口各
 **跨时钟域**：摄像头 PCLK 域 → 系统 100 MHz 域，由 `async_fifo`
 （**格雷码指针 + 双时钟**，标准 CDC 做法）处理。
 
-> Clocking Wizard：100 → 24 MHz，**M=12 / D=1 / O=50，VCO = 1200 MHz**。
+> Clocking Wizard：100 → 24 MHz，**M=6 / D=1 / O=25，VCO = 600 MHz**（⚠ 2026-09-22 修正：
+> 原先让工具自动选，解出 VCO=1200 MHz 顶在 -1 速度等级上限 → **XCLK 不出**）。
 > **非整数分频，必须用 MMCM**（简单分频做不到）。
 
 ---
@@ -329,12 +331,15 @@ crop_scale（640×480 → 96×96）→ 高斯 → Sobel → 自适应阈值 → 
 
 #### 资源占用（PL 侧，实现后）
 
+**2026-09-26 实测（含 HDMI 通路）**：
+
 | 资源 | 用量 | 占比 | 说明 |
 |---|---|---|---|
-| Slice LUTs | **24,442** | **45.94%** | ⚠ 比早期版本接近翻倍，见下方说明 |
-| Slice Registers | **30,692** | **28.85%** | |
-| **DSP48E1** | **61** | **27.73%** | ⚠ 主要来自 HLS 的 `morph_stage` 索引乘法（见 §4.2） |
+| Slice LUTs | **26,056** | **48.98%** | 含新增的 rgb2dvi / 位宽转换 / 像素时钟域 |
+| Slice Registers | **31,264** | **29.38%** | |
+| **DSP48E1** | **61** | **27.73%** | 主要来自 HLS 的 `morph_stage` 索引乘法（见 §4.2） |
 | Block RAM Tile | 25.5 | 18.21% | |
+| Bonded IOB | **21** | 16.80% | ↓ 由 35 降下来：22 根并行 HDMI 端口 → 8 根 TMDS 差分对 |
 
 > 数据取自 `../vivado/build-report.md`，与 `utilization.rpt` **逐项核对过**。
 > **2026-09-23 更新**：`crop_scale` 改为按比例分配后 LUT/FF 大幅上升

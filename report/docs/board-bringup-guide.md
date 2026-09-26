@@ -151,7 +151,7 @@ J3 → Pmod B（8 根）： D6 D4 D2 D0 D7 D5 D3 D1  ← 数据线是**交错**�
 | 项 | 结论 |
 |---|---|
 | `io_xclk` 约束 | ✅ **保留**（`Y18`） |
-| BD 里的 `clk_wiz_xclk` | ✅ **保留**（100 MHz → 24 MHz，M=12/D=1/O=50，VCO=1200 MHz） |
+| BD 里的 `clk_wiz_xclk` | ✅ **保留**（100 MHz → 24 MHz，**M=6/D=1/O=25，VCO=600 MHz**（⚠ 2026-09-22 修正）） |
 | `Pmod A` 上 `U18`/`W18` 等 | ✅ 正常排布，**没有"白占 IO"的问题** |
 
 > **初版还说 `io_d` 约束了 10 个引脚"越界占了 Pmod A"—— 那也是错的。**
@@ -1015,7 +1015,10 @@ proc run_with_retry {run_name launch_args {max_attempts 3}} {
 - 这份 XDC 是 **PS7 IP 自动生成**的（`set_property PIO_DIRECTION` 是 PS7 专有属性）
 - OOC 综合阶段 **0 报错**（`bd_video_ps7_0_synth_1` / `dma_in` / `dma_out` 都查过）
 - 只在顶层 `link_design` 读 `.dcp` 时炸 —— 顶层 36 个 user IO 里 **没有一个是 `DDR_*`**，约束无处落地
-- 顶层 35 个 logical port 中 22 个是 `hdmi_vid_out_*`（本来就悬空、走 DRC 豁免）
+- 顶层 35 个 logical port 中 22 个是 `hdmi_vid_out_*`（**当时**悬空、走 DRC 豁免）
+  > ⚠ 2026-09-26 后不再是这个形态：HDMI 端口已换成 8 根 TMDS 差分对
+  > `hdmi_tmds_*` 并绑定了真实引脚，DRC 豁免已删除。
+  > 下面这段记录的是**当时那个版本**的现象，保留作参考。
 - DDR 引脚/电平约束**同时内建在 `.dcp` 里**，仍然生效
 - 那次实现 **ERROR 0 条**，比特流正常生成
 
@@ -1046,7 +1049,34 @@ proc run_with_retry {run_name launch_args {max_attempts 3}} {
 | ~~`ov5640_regs.v` 寄存器表~~ | ✅ **2026-09-17 已换为真表**（250 条，固化 640×480）。✅ **2026-09-21 上板确认事务发出、但无 ACK**（`cfg_error=1`）→ 问题在 XCLK/接线 |
 | 引脚映射（万用表复核） | ❌ **未做**（§2.2）—— ⚠ **当前故障的候选原因之一** |
 | PYNQ 镜像与 2025.2 兼容性 | ⚠ **部分**：overlay 能加载并认全 6 个 IP；**未做版本专项验证** |
-| HDMI 输出 | ❌ 未实现（BD 里没有 TMDS 编码器；22 个端口在比特流里悬空，**上板不要接 HDMI 线**） |
+| HDMI 输出 | ✅ **2026-09-26 已实现**（720p60）—— ⚠ **尚未上板验证**。上板流程见下方「HDMI 输出验证」 |
+
+### HDMI 输出验证（2026-09-26 新增）
+
+> ⚠⚠ **烧完比特流显示器什么都不会有** —— 这不是坏，是**正常的**。
+> `v_tc` / `vdma` 在 BD 里都开了 AXI-Lite，按 AMD PG016
+> **必须用软件配置**（寄存器复位后默认全 0）。不配 = 无时序输出 = "无信号"。
+
+**跑 `host/hdmi_bringup.py`**，分两阶段：
+
+| 阶段 | 做什么 | 期望看到 |
+|---|---|---|
+| **1** | 配 v_tc 720p60 + 使能发生器 | 显示器**识别到 1280×720@60**，但**画面是黑的** |
+| **2** | 配 vdma + 写彩条 + 启动 | 出现**标准彩条** |
+
+**阶段 1 是最大的坎** —— 它过了说明 TMDS 编码 / 像素时钟 / 引脚**全对**。
+阶段 2 只是喂数据。
+
+```bash
+sudo -E /usr/local/share/pynq-venv/bin/python3 hdmi_bringup.py --stage 1
+sudo -E /usr/local/share/pynq-venv/bin/python3 hdmi_bringup.py --stage 2
+```
+
+⚠ **彩条是位序的"试纸"**：PL 输出的必须是 **RBG** 不是 RGB。
+若搞错会绿蓝互换，**"黄色条会变成品红"**。详见 `host/README.md`。
+
+⚠ 插线注意：PYNQ-Z2 上 **HDMI 口有两个、挨得很近，容易插反** ——
+显示器要接 **HDMI OUT**。
 | 板上实测 ②③ | ✅ **2026-09-21 通过**：DDR 自检 4/4 + 预处理链 **11/11**，单帧 ≈5 ms（**不需要摄像头**） |
 | 板上实测 ④~⑧ | ❌ **未通**：摄像头不出图，ILA 定位到 `sccb_0/cfg_error=1`（见实测记录 §5） |
 | 建工程→综合→实现→比特流→XSA 全流程 | ✅ **2026-09-17 完整跑通**（0 error / 0 critical warning，顶层 `bd_video_wrapper`） |

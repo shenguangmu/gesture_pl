@@ -30,15 +30,17 @@ vivado -mode batch -source build/vivado/create_project.tcl -tclargs --synth 0
 
 | 指标 | 值 | 出处 |
 |---|---|---|
-| **时序** | WNS **+0.198** / WHS **+0.051** ns，`All user specified timing constraints are met` | 2026-09-25 实现后 |
-| **时钟** | 目标 **100 MHz**；HLS 流水线 csynth 估 **143.31 MHz**（`morph_stage` 阶段）/ **122.95 MHz**（全设计） | csynth 报告 |
+| **时序** | WNS **+0.079** / WHS **+0.050** ns，0 个失败端点 | **2026-09-26** 实现后（含 HDMI）|
+| **时钟** | 系统 **100 MHz** + 摄像头 24 MHz + **像素 74.25 MHz（720p60）**；HLS 流水线 csynth 估 **143.31 MHz**（`morph_stage` 阶段）/ **122.95 MHz**（全设计） | csynth 报告 |
 | **吞吐** | 单帧 **0.006 s**（板上实测，640×480 → 96×96）；所有 HLS 循环 `II = 1` | 2026-09-25 板测 |
-| **资源** | Slice LUT **48.38%** / LUT as Logic 46.75% / Block RAM **18.21%** | `utilization.rpt` |
-| **DRC** | 0 Errors | 实现日志 |
+| **资源** | Slice LUT **48.98%** / Slice Reg 29.38% / Block RAM **18.21%** / DSP **27.73%** / Bonded IOB 16.80% | `utilization.rpt` |
+| **DRC** | **0 Errors**（HDMI 做完后**不再有 DRC 豁免**）| 实现日志 |
 | **规模** | 640×480 RGB565 输入 → 96×96 uint8 输出（9216 B） | 接口契约 |
+| **显示** | 1280×720@60 HDMI 输出 | ⚠ **尚未上板验证** |
 
-> ⚠ **WNS 逐次波动大**（历史 +0.873 / +1.177 / +0.265 / +0.198）——
-> 布线是随机过程，别拿单次值当"设计好坏"。
+> ⚠ **WNS 逐次波动大**（历史 +0.873 / +1.177 / +0.265 / +0.198 / **+0.079**）——
+> 布线是随机过程，别拿单次值当"设计好坏"。加 HDMI 后从 +0.198 降到 +0.079，
+> 仍是正的、0 个失败端点。
 >
 > ⚠⚠ **且该 WNS 属于 AMD `v_tc` IP 内部，不是本设计的余量**：
 > 全设计 10 条最差 setup 路径**全部在 `v_tc` 里**（一条布线 9.1 ns、

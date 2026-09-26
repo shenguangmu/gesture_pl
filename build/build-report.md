@@ -20,36 +20,59 @@
 | 顶层 | `bd_video_wrapper` |
 | 综合/实现 | **0 error / 0 critical warning** |
 | 比特流 | 4,045,692 字节，`Bitgen Completed Successfully` |
+| 构建日期 | **2026-09-26**（含 HDMI 通路；⚠ 尚未上板）|
 
-> ⚠ **重跑命令**：`vivado -mode batch -source vivado/create_project.tcl`
-> （前置：先跑 `vitis-run --mode hls --tcl src/HLS/run_gesture.tcl`，
-> 因为 BD 需要 HLS 导出的 IP —— 详见根 `README.md`）
+> ⚠ **重跑命令**（在仓库根）：
+> ```bash
+> bash build/tools/rebuild_all.sh            # 一键：全清缓存 → HLS → Vivado → 校验
+> bash build/tools/rebuild_all.sh --upload   # 再传板并核 md5
+> ```
+> ⚠ **别手敲两条命令、也别用 GUI** —— 脚本堵了四个坑：IP 版本号恒为 1.0
+> （改了实现不重建会让 Vivado 静默用旧 IP）、三处 IP 缓存、
+> 生成物与 BD 源被跟踪的 `.xpr`/`.srcs` 的冲突、以及**时序硬校验**
+> （2026-09-26 才补上，此前它只打印不判定，放行过一个 WNS −4.4ns 的坏比特流）。
+>
+> 只想快速查 BD 是否合法（约 1 分钟，不综合）：
+> ```bash
+> cd build/vivado && vivado -mode batch -source create_project.tcl -tclargs --synth 0
+> ```
 
 ---
 
 ## 一、资源占用
 
-来自 `utilization.rpt`（Design State: **Routed**）：
+来自 `utilization.rpt`（Design State: **Routed**，**2026-09-26 含 HDMI 通路的构建**）：
 
 | 资源 | 用量 | 可用 | 占比 |
 |---|---|---|---|
-| Slice LUTs | **24,442** | 53,200 | **45.94%** |
-| └ LUT as Logic | 23,575 | 53,200 | 44.31% |
-| └ LUT as Memory | 867 | 17,400 | 4.98% |
-| Slice Registers | **30,692** | 106,400 | **28.85%** |
+| Slice LUTs | **26,056** | 53,200 | **48.98%** |
+| └ LUT as Logic | 25,188 | 53,200 | 47.35% |
+| └ LUT as Memory | 868 | 17,400 | 4.99% |
+| Slice Registers | **31,264** | 106,400 | **29.38%** |
 | **DSPs**（DSP48E1） | **61** | 220 | **27.73%** |
 | **Block RAM Tile** | **25.5** | 140 | **18.21%** |
-| **Bonded IOB** | **35** | 125 | **28.00%** |
-| BUFGCTRL | 4 | 32 | 12.50% |
-| MMCME2_ADV | 1 | 4 | 25.00% |
+| **Bonded IOB** | **21** | 125 | **16.80%** |
+| BUFGCTRL | 8 | 32 | 25.00% |
+| MMCME2_ADV | 3 | 4 | 75.00% |
 | └ RAMB36/FIFO | 15 | 140 | 10.71% |
+
+> ### 2026-09-26（HDMI 通路）带来的变化
+>
+> | 资源 | 之前 | 现在 | 为什么变 |
+> |---|---|---|---|
+> | Slice LUTs | 24,442 | **26,056** | 新增 rgb2dvi / 位宽转换 / 像素时钟域 |
+> | Slice Registers | 30,692 | **31,264** | 同上 |
+> | **Bonded IOB** | 35 | **21** ↓ | **22 根并行 `hdmi_vid_out_*` → 8 根 TMDS 差分对** |
+> | **MMCME2_ADV** | 1 | **3** ↑ | **新增 `clk_wiz_pix`(74.25MHz) + rgb2dvi 内部 MMCM** |
+> | BUFGCTRL | 4 | **8** | 新增像素时钟与串行时钟的 BUFG |
 
 > ### ⚠ **LUT / FF 相比早期版本接近翻倍 —— 是设计变更，不是测量误差**
 >
 > | | Slice LUTs | Slice Registers | 说明 |
 > |---|---|---|---|
 > | 2026-09-15 版 | 11,255 (21.16%) | 14,810 (13.92%) | `crop_scale` 用**固定步长** |
-> | **当前版** | **24,442 (45.94%)** | **30,692 (28.85%)** | `crop_scale` 改**按比例分配** |
+> | 2026-09-23（crop_scale 改版） | **24,442 (45.94%)** | **30,692 (28.85%)** | `crop_scale` 改**按比例分配** |
+> | **2026-09-26（加 HDMI）** | **26,056 (48.98%)** | **31,264 (29.38%)** | 再加 rgb2dvi / 位宽转换 / 像素时钟 |
 >
 > **根因**：按比例分配的 `crop_scale` 需要 `acc[96]` 累加器数组，
 > 且必须加 `ARRAY_PARTITION complete` 才能保住主循环 **II=1** ——
@@ -95,21 +118,32 @@
 
 ## 二、时钟频率
 
-来自 `timing_summary_routed.rpt` 的 Clock Summary：
+来自 `timing_summary_routed.rpt` 的 Clock Summary（**2026-09-26 含 HDMI**）：
 
 | 时钟 | 周期 (ns) | 频率 (MHz) | 来源 |
 |---|---|---|---|
 | `clk_fpga_0` | 10.000 | **100.000** | PS7 `FCLK_CLK0` |
-| `bd_video_i/clk_wiz_xclk/inst/clk_in1` | 10.000 | 100.000 | 同上（CW 输入） |
-| `clk_out1_bd_video_clk_wiz_xclk_0` | 41.667 | **24.000** | Clocking Wizard 输出 → `io_xclk` |
+| `clk_out1_bd_video_clk_wiz_xclk_0` | 41.667 | **24.000** | Clocking Wizard → 摄像头 `io_xclk` |
 | `cam_pclk` | 41.667 | **24.000** | 摄像头 PCLK（外部输入） |
-| `clkfbout_...` | 50.000 | 20.000 | MMCM 反馈 |
+| **`clk_out1_bd_video_clk_wiz_pix_0`** | **13.468** | **74.250** | **像素时钟（2026-09-26 新增）** |
 
-**两个时钟域**：系统 100 MHz 与摄像头 24 MHz（`cam_pclk`），
-跨域由 `async_fifo`（格雷码指针，标准 CDC 做法）处理。
+**四个时钟域**：系统 100 MHz、摄像头 24 MHz（`cam_pclk`）、
+**像素 74.25 MHz（新增）**，外加 rgb2dvi 内部的串行时钟（5× 像素 = 371.25 MHz，
+由 IP 内部 MMCM 产生，不出现在顶层）。
 
-> Clocking Wizard 参数：100 MHz → 24 MHz，
-> **M=12 / D=1 / O=50，VCO = 1200 MHz**（非整数分频，必须用 MMCM）。
+跨域处理：摄像头侧用 `async_fifo`（格雷码指针）；
+视频输出侧由 `v_axi4s_vid_out` 的内部异步 FIFO 处理
+（`C_HAS_ASYNC_CLK=1`，把 100 MHz 的 s_axis 与 74.25 MHz 的 vid_io 隔开）。
+
+> Clocking Wizard 参数（两处，都**显式指定 M/D/O**，不让工具自动选）：
+> - `clk_wiz_xclk`：100 MHz → 24 MHz，**M=6 / D=1 / O=25，VCO = 600 MHz**
+> - `clk_wiz_pix`：100 MHz → 74.25 MHz，**M=37.125 / D=5 / O=10，VCO = 742.5 MHz**
+>
+> ⚠ 两个都**必须开 `OVERRIDE_MMCM`**，否则 MMCM_* 参数被**静默忽略**
+> （只给 `[IP_Flow 19-3374]` WARNING）。见 `vivado/README.md` 的踩坑记录。
+>
+> ⚠ 74.25 MHz 是 CEA-861 对 720p60 的**精确**像素时钟，
+> 与 v_tc 的 720p 计时（1650×750）配合恰好得 **60.0 Hz**。
 
 ---
 
@@ -119,11 +153,20 @@
 
 | 指标 | 值 | 判据 |
 |---|---|---|
-| **WNS**（最差建立裕量） | **+0.199 ns** | 正数 = 收敛 |
-| **WHS**（最差保持裕量） | **+0.051 ns** | 正数 = 收敛 |
-| TNS / THS | 0.000 / 0.000 | 0 个失败端点 |
+| **WNS**（最差建立裕量） | **+0.079 ns** | 正数 = 收敛 |
+| **WHS**（最差保持裕量） | **+0.050 ns** | 正数 = 收敛 |
+| TNS / THS | 0.000 / 0.000 | **0 个失败端点** |
 | 结论 | ✅ **`All user specified timing constraints are met.`** | |
-| 分析端点 | 40,239（建立）/ 35,302（保持） | |
+
+> ⚠ **2026-09-26 加 HDMI 后 WNS 从 +0.198 降到 +0.079** —— 仍是正的、
+> 0 个失败端点，但余量收窄了。新增了 rgb2dvi（含 371.25 MHz 串行时钟）
+> 与一个像素时钟域，路径变多是正常的。
+>
+> ⚠⚠ **中途踩过一次大坑**：第一版把 `rst_pix/slowest_sync_clk` 接到了
+> 100 MHz（而不是像素时钟），产生**真实的跨时钟域违例**，
+> **WNS = −4.436 ns**（10 条违例路径全同源）。
+> 而且当时 `rebuild_all.sh` 的时序校验**只打印不判定**，放行了那个坏比特流。
+> 修好接线并补上真正的时序闸门后恢复到 +0.079。详见 `vivado/README.md`。
 
 > ### ⚠⚠ **`+0.265` 不是本设计的余量**（2026-09-18 查证）
 >
@@ -197,18 +240,11 @@
 
 ### 3.3 未验证项（如实列出）
 
-| 项 | 状态 |
-|---|---|
-| **板级实测 ②③** | ✅ **已做（2026-09-21）**：DDR 自检 4/4 + 预处理链 **11/11**，单帧 ≈5 ms |
-| **板级实测 ④~⑧** | ❌ **未通**：摄像头不出图，`sccb_0/cfg_error=1`（未区分 XCLK / 接线） |
-| OV5640 配置表能否出图 | ⚠ 已换真表（250 条），上板确认**事务发出但无 ACK**，**未出图** |
-| PYNQ overlay 加载 | ✅ **已实测通过**（加载 + 认全 6 个 IP + 地址与 `.hwh` 吻合）；⚠ 镜像与 2025.2 的**版本兼容性**未做专项验证 |
-| 功耗实测 | ⚠ 只有 Vivado 估算（`power_routed.rpt`），**无实测** |
-
-### 3.3 未验证项（如实列出）
+> ⚠ 本节按"**还没做的事**"如实列出。这是赛题要求的诚实边界，不要删。
 
 | 项 | 状态 |
 |---|---|
+| **HDMI 输出（2026-09-26 新增）** | ⚠ **硬件通路已做完、构建通过，但完全没上板**。而且上板还需要跑软件配置（`host/hdmi_bringup.py`）—— 烧完比特流本身是不会有输出的（v_tc/vdma 必须软件配置）|
 | **板级实测 ②③** | ✅ **已做（2026-09-21）**：DDR 自检 4/4 + 预处理链 **11/11**，单帧 ≈5 ms |
 | **板级实测 ④~⑧** | ❌ **未通**：摄像头不出图，`sccb_0/cfg_error=1`（未区分 XCLK / 接线） |
 | OV5640 配置表能否出图 | ⚠ 已换真表（250 条），上板确认**事务发出但无 ACK**，**未出图** |
@@ -219,10 +255,16 @@
 
 ## 四、DRC
 
+> ✅ **2026-09-26 更新**：HDMI 通路做完后，**不再有任何 DRC 豁免**。
+
 | 检查 | 结果 |
 |---|---|
 | 实现后 DRC | **0 Errors** |
-| `NSTD-1` / `UCIO-1` | 各 1 条 Warning —— 22 个 `hdmi_vid_out_*` 端口**未约束**（TMDS 编码器未做） |
-| 处理方式 | 走 `write_bitstream` 的 pre-hook 豁免（`constraints/hdmi_drc_hook.tcl`） |
+| `NSTD-1` / `UCIO-1` | **0 条** —— HDMI 端口已换成 8 根 TMDS 差分对 `hdmi_tmds_*` 并绑定真实引脚 |
+| 处理方式 | **无需豁免**（临时文件 `video_io_hdmi_tmp.xdc` / `hdmi_drc_hook.tcl` 已删除）|
 
-> ⚠ **这 22 个端口在比特流里是悬空的。上板时不要接 HDMI 线。**
+> **旧版（2026-09-16 ~ 09-25）**：当时 TMDS 编码器未做，BD 导出的是 22 个
+> `hdmi_vid_out_*` 并行端口，**没有引脚可绑**，只能把 `NSTD-1`/`UCIO-1`
+> 降级为 Warning（走 `write_bitstream` 的 pre-hook）。
+> 代价是那 22 个端口在比特流里**悬空** —— 当时明确告诫过"上板不要接 HDMI 线"。
+> **那条告诫现在作废：HDMI 有真实引脚了，可以接线。**

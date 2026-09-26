@@ -26,14 +26,20 @@ RGB565 640×480 ─► crop_scale ─► 96×96 ─┬─► 高斯 ─► Sobel
 **★ 关键设计**：几何处理放最前 → 昂贵算子只在小图上跑，**算力差 33 倍**。
 所有 HLS 流水线阶段 `II = 1`。
 
-## 二、本目录范围（两处边界，别多找）
+## 二、本目录范围（三处边界，别多找）
 
-### ⚠ 1. 本目录**不含 Python**
+### ⚠ 1. 本目录**基本不含 Python** —— 有一个例外
 
 PL 的交付物是 **比特流 + `.hwh` + 报告** —— 都是语言无关的。
 主机侧与 PS 侧的 Python 代码**由其他人维护**，不在本目录内。
 
-所以本目录里**没有**：PC 侧 golden 参考实现、板上驱动、数据转换脚本。
+所以本目录里**没有**：PC 侧 golden 参考实现、造数据脚本、CNN / 游戏逻辑。
+
+> **例外（2026-09-26 起）**：`host/` 目录里有**一个** Python 脚本
+> `hdmi_bringup.py`。理由：**HDMI 通没通无法只靠比特流证明** ——
+> `v_tc` / `vdma` 在 BD 里开了 AXI-Lite，按 AMD PG016
+> **必须用软件配置**，烧完比特流显示器什么都不会有。
+> 而且这脚本要和 CNN 队友共用。详见 `host/README.md`。
 
 ### ⚠ 2. 本目录**不含比特流**（它是构建产物）
 
@@ -59,9 +65,11 @@ PL 的交付物是 **比特流 + `.hwh` + 报告** —— 都是语言无关的�
 | 目录 | 内容 |
 |---|---|
 | **`src/HLS/`** | 图像预处理链（`gesture_preproc.cpp`）+ 参考实现 + csim TB + 综合脚本 |
-| **`src/RTL/`** | Verilog：DVP 采集 / SCCB 主控 / 异步 FIFO / IOBUF / 配置 ROM + 3 个 TB |
+| **`src/RTL/`** | Verilog：DVP 采集 / SCCB 主控 / 异步 FIFO / IOBUF / 配置 ROM / **HDMI 位宽转换** + 4 个 TB |
 | **`build/`** | 一键构建脚本、BD 与约束 Tcl、**综合实现报告**、资源报告 |
 | **`data/`** | 测试向量（输入帧 + **硬件实测对过的** golden） |
+| **`host/`** | ⚠ 边界例外：**一个** Python —— `hdmi_bringup.py`（HDMI 板上配置，见 `host/README.md`）|
+| **`third_party/`** | 第三方 IP（Digilent `rgb2dvi`，HDMI 用）+ 出处与许可说明 |
 | **`sim/`** | **验证索引** —— 说明正确性怎么确认（TB 跟着源码放，见该目录 README） |
 | **`skill/`** | 可复用经验：踩坑清单 / 纠错方法论 |
 | **`report/`** | 设计报告 + 大模型协作记录 + 工程过程文档（`docs/`） |
@@ -73,13 +81,15 @@ PL 的交付物是 **比特流 + `.hwh` + 报告** —— 都是语言无关的�
 
 | 指标 | 值 |
 |---|---|
-| **时序** | WNS **+0.198** / WHS **+0.051** ns，`All user specified timing constraints are met` |
-| **时钟** | 目标 **100 MHz**；HLS 流水线 csynth 估 **143.31 MHz**（`morph_stage`）/ **122.95 MHz**（全设计） |
+| **时序** | WNS **+0.079** / WHS **+0.050** ns，0 个失败端点（2026-09-26 含 HDMI）|
+| **时钟** | 系统 **100 MHz** + 摄像头 24 MHz + **像素 74.25 MHz（720p60）**；HLS 流水线 csynth 估 **143.31 MHz**（`morph_stage`）/ **122.95 MHz**（全设计） |
 | **吞吐** | 单帧 **0.006 s**（板上实测）；所有 HLS 循环 `II = 1` |
-| **资源** | LUT **48.38%** / BRAM **18.21%** / DSP 见 `build/utilization.rpt` |
+| **资源** | LUT **48.98%** / BRAM **18.21%** / DSP **27.73%**（详见 `build/utilization.rpt`）|
 | **接口** | 640×480 RGB565 入 → 96×96 uint8 出（9216 B，4 字节对齐） |
+| **显示** | 1280×720@60 HDMI 输出 | ⚠ **尚未上板验证** |
 
-> ⚠ **WNS 逐次波动大**（历史 +0.873 / +1.177 / +0.265 / +0.198），布线是随机过程。
+> ⚠ **WNS 逐次波动大**（历史 +0.873 / +1.177 / +0.265 / +0.198 / **+0.079**），布线是随机过程。
+> 加 HDMI 后从 +0.198 降到 +0.079，仍是正的、0 失败端点。
 > ⚠⚠ **且该 WNS 属于 AMD `v_tc` IP 内部，不是本设计的余量** ——
 > 全设计 10 条最差 setup 路径**全部在 `v_tc` 里**，改我们的 RTL / HLS 对它零影响。
 > 详见 `build/build-report.md` §4.5。
@@ -101,7 +111,7 @@ bash build/tools/rebuild_all.sh              # 全清 → HLS → Vivado → 校
 **不需要 license 的快速回归**：
 
 ```bash
-bash src/RTL/run_iverilog.sh          # 秒级，3 个 TB
+bash src/RTL/run_iverilog.sh          # 秒级，4 个 TB
 ```
 
 ---
