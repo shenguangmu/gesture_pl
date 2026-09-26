@@ -36,13 +36,29 @@ C:\Users\xiaomu\Desktop\prepare\paulgeorge66_2025\src\yolov2\ip\
 
 ### 许可
 
-Digilent 的 vivado-library 是**开源**的，但其 IP 文件通常带有
-Digilent 的版权头。**上游仓库根目录没有随 IP 单文件附带 LICENSE**
-（只有整个 vivado-library 仓库的许可）。
+**BSD 3-clause（Revised BSD）** —— 从 IP 源文件的版权头**逐字核实**的
+（`rgb2dvi_v1_2/src/rgb2dvi.vhd` 开头）：
 
-⚠ **提交赛题前请再确认一次上游当前许可条款** —— 不要因为"是开源的"
-就默认可以任意分发。需要时回到 GitHub 上的 `Digilent/vivado-library`
-核对。本目录只是**副本**，以官方仓库为准。
+> `(c) 2014 Copyright Digilent Incorporated / All Rights Reserved`
+>
+> `This program is free software; distributed under the terms of BSD 3-clause
+> license ("Revised BSD License", "New BSD License", or "Modified BSD License")`
+
+**允许再分发**，条件是三条：
+
+| 条件 | 本仓库是否满足 |
+|---|---|
+| ① 源码再分发必须保留版权声明、条件列表、免责声明 | ✅ **原样保留了源文件的版权头** |
+| ② 二进制再分发须在文档中复制版权声明 | ✅ 本条即说明，随比特流一并交付 |
+| ③ 不得用 Digilent 或其贡献者名义背书 | ✅ 未用于背书 |
+
+> ⚠ 这条**很关键且是新增的**：本项目自身是 **Apache-2.0**，
+> 而这里引入了 **BSD-3** 的第三方代码 —— **两种许可并存是允许的**
+> （都属宽松许可，BSD-3 与 Apache-2.0 兼容），但**必须保留
+> Digilent 的版权头**。**不要**因为"统一许可"而删掉那些头。
+
+> ⚠ 上游 `Digilent/vivado-library` 仓库根有它自己的 LICENSE，但
+> **IP 单文件也自带版权头** —— 以**文件头**为准（那就是再分发的依据）。
 
 ### 版本
 
